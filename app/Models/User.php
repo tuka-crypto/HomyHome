@@ -2,47 +2,41 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
-    use HasApiTokens;
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    use HasApiTokens, Notifiable;
     protected $fillable = [
-        'first_name',
-        'last_name',
         'mobile_phone',
         'password',
+        'first_name',
+        'last_name',
         'role',
+        'date_of_birth',
         'profile_image',
         'id_card_image',
-        'date_of_birth',
+        'is_approved',
     ];
-
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
+    public function isOwner():bool
+    {
+        return $this->role === 'owner';
+    }
+    public function isTenant():bool
+    {
+        return $this->role === 'tenant';
+    }
+    public function isAdmin():bool
+    {
+        return $this->role === 'admin';
+    }
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [

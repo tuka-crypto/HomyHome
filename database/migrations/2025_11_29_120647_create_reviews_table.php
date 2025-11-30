@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('apartment_id');
             $table->unsignedBigInteger('tenant_id');
             $table->Integer('rating');
+            $table->text('comment');
             $table->unsignedBigInteger('booking_id');
             $table->timestamps();
         });

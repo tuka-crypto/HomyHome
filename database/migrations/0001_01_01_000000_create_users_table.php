@@ -19,8 +19,9 @@ return new class extends Migration
             $table->string('password');
             $table->string('profile_image')->nullable();
             $table->String('id_card_image')->nullable();
-            $table->enum('role', ['owner', 'tenant', 'admin']);
+            $table->enum('role', ['owner', 'tenant']);
             $table->date('date_of_birth')->nullable();
+            $table->boolean('is_approved');
             $table->rememberToken();
             $table->timestamps();
         });

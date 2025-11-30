@@ -13,13 +13,17 @@ return new class extends Migration
     {
         Schema::create('apartments', function (Blueprint $table) {
             $table->id();
-            $table->string('discreption',500);
+            $table->unsignedBigInteger('owner_id');
+            $table->foreign('owner_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
             $table->string('city',100);
             $table->string('country',100);
             $table->string('address',255);
-            $table->boolean('is_available');
             $table->decimal('price', 8, 2);
+            $table->string('discreption',500);
+            $table->boolean('is_available');
             $table->decimal('avarage_rating', 3, 2)->nullable();
+            $table->integer('number_of_room');
+            $table->integer('space');
             $table->timestamps();
         });
     }

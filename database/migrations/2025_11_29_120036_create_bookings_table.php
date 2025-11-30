@@ -6,15 +6,14 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('apartment_id');
+            $table->foreign('apartment_id')->references('id')->on('apartments')->onDelete('cascade');
             $table->unsignedBigInteger('tenant_id');
+            $table->foreign('tenant_id')->references('id')->on('users')->onDelete('cascade');
             $table->date('start_date');
             $table->date('end_date');
             $table->decimal('total_price', 10, 2);
@@ -22,7 +21,6 @@ return new class extends Migration
             $table->integer('guest_count');
             $table->boolean('owner_approved')->default(false);
             $table->string('booking_number',100);
-
             $table->timestamps();
         });
     }

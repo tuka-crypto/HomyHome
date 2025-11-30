@@ -1,116 +1,128 @@
 <?php
-
 namespace App\Http\Controllers;
-
-use App\Models\User;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Hash;
-use Illuminate\Support\Facades\Hash as FacadesHash;
-use Illuminate\Testing\Fluent\Concerns\Has;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage as FacadesStorage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function register(Request $request)
-    {
-        $request->validate([
-            'mobile_phone' => 'required|string|unique:users',
-            'password' => 'required|string|min:4',
-            'first_name'=>'required|string|max:255',
-            'last_name'=>'required|string|max:255',
-            'role'=>'required|in:owner,tenant,admin',
-            'date_of_birth'=>'nullable|date',
-            'profile_image'=>'nullable|string|max:255',
-            'id_card_image'=>'nullable|string|max:255',
+    public function signup(Request $request)
+{
+    try {
+        $validator = Validator::make($request->all(), [
+            'mobile_phone' => 'required|unique:users|regex:/^[0-9]{10,15}$/',
+            'password' => 'required|min:6',
+            'role' => 'required|in:tenant,owner',
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'date_of_birth' => 'required|date|before:today',
+            'profile_image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'id_card_image' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
-        $user = User::query()->create([
-            'mobile_phone' => $request->mobile_phone,
-            'password' => FacadesHash::make($request->password),
-            'first_name'=>$request->first_name,
-            'last_name'=>$request->last_name,
-            'role'=>$request->role,
-            'date_of_birth'=>$request->date_of_birth,
-            'profile_image'=>$request->profile_image,
-            'id_card_image'=>$request->id_card_image,
-        ]); 
-           $token=$user->createToken("API TOKEN")->plainTextToken;
-    $data=[];
-    $data['user']=$user;
-    $data['token']=$token;
-    return response()->json([
-        'status'=>1,
-        'data'=>$data,
-        'massege'=>'user created successfully'
-    ]);
-    }
-    public function login(Request $request)
-    {
-        //still the admin approvment is pending
-        $request->validate([
-            'mobile_phone' => 'required|string',
-            'password' => 'required|string|min:4',
-        ]);
-        $user = User::where('mobile_phone', $request->mobile_phone)->first();
-        if (!$user || !FacadesHash::check($request->password, $user->password)) {
+
+        if ($validator->fails()) {
             return response()->json([
-                'status' => 0,
-                'message' => 'The provided credentials are incorrect.'
-            ], 401);
+                'status' => 'error',
+                'message' => 'data is not valid',
+                'errors' => $validator->errors()
+            ], 422);
         }
-        $token = $user->createToken("API TOKEN")->plainTextToken;
-        $data = [];
-        $data['user'] = $user;
-        $data['token'] = $token;
-        return response()->json([
-            'status' => 1,
-            'data' => $data,
-            'message' => 'User logged in successfully'
+
+        // رفع الصور
+        $profilePath = $request->file('profile_image')->store('profiles', 'public');
+        $idCardPath = $request->file('id_card_image')->store('id_cards', 'public');
+
+        // إنشاء المستخدم
+        $user = User::create([
+            'mobile_phone' => $request->mobile_phone,
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
+            'is_approved' => false,
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'date_of_birth' => $request->date_of_birth,
+            'profile_image' => $profilePath,
+            'id_card_image' => $idCardPath,
         ]);
-    }
-    public function logout(Request $request)
-    {
-        $request->user()->tokens()->delete();
+
         return response()->json([
-            'status' => 1,
-            'message' => 'User logged out successfully'
-        ]);
+            'status' => 'success',
+            'message' => 'register successfully, pending admin approval',
+            'data' => $user
+        ], 201);
+
+    } catch (\Exception $e) {
+        if (isset($profilePath)) FacadesStorage::disk('public')->delete($profilePath);
+        if (isset($idCardPath)) FacadesStorage::disk('public')->delete($idCardPath);
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'wrong in register',
+            'error' => $e->getMessage()
+        ], 500);
     }
-    public function index()
+}
+    public function signin(Request $request)
     {
-        //
+        try {
+            $request->validate([
+                'mobile_phone' => 'required',
+                'password' => 'required'
+            ]);
+
+            $user = User::where('mobile_phone', $request-> mobile_phone)->first();
+
+            if (!$user || !Hash::check($request->password, $user->password)) {
+                throw ValidationException::withMessages([
+                    'mobile_phone' => ['data is not correct'],
+                ]);
+            }
+
+            if (!$user->is_approved) {
+                return response()->json([
+                    'message' => 'pending admin approval'
+                ], 403);
+            }
+            $user->tokens()->delete();
+            
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'mobile_phone' => $user->mobile_phone,
+                    'role' => $user->role,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'has_completed_profile' => !is_null($user->first_name) && !is_null($user->last_name)
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'failed in login',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+public function logout(Request $request)
     {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        try {
+            $request->user()->tokens()->delete();
+            
+            return response()->json([
+                'message' => 'logout successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'failed in logout',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

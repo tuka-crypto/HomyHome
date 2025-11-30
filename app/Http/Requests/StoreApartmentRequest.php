@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 
 class StoreApartmentRequest extends FormRequest
 {
@@ -11,8 +12,14 @@ class StoreApartmentRequest extends FormRequest
      */
     public function authorize(): bool
     {
+    // إذا المستخدم غير مسجّل دخول
+    if (!Auth::check()) {
         return false;
     }
+    // استدعاء المستخدم من الـ Request نفسه
+    return $this->user()->isOwner();
+}
+
 
     /**
      * Get the validation rules that apply to the request.

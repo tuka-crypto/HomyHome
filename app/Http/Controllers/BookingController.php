@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Http\Requests\StoreBookingRequest;
 use App\Http\Requests\UpdateBookingRequest;
-
+use Carbon\Carbon;
 class BookingController extends Controller
 {
     /**
@@ -13,7 +13,37 @@ class BookingController extends Controller
      */
     public function index()
     {
-        
+       $userId = auth()->id(); // المستخدم الحالي
+        $today = Carbon::today();
+
+        // الحجوزات الجديدة (pending)
+        $newBookings = Booking::where('tenant_id', $userId)
+            ->where('status', 'pending')
+            ->orderBy('start_date', 'desc')
+            ->get();
+
+        // الحجوزات الحالية (confirmed والوقت الحالي بين start و end)
+        $currentBookings = Booking::where('tenant_id', $userId)
+          ->where('status', 'confirmed')
+          ->where('start_date', '<=', $today)
+          ->where('end_date', '>=', $today)
+          ->orderBy('start_date', 'desc')
+          ->get();
+
+        // الحجوزات القديمة (منتهية أو ملغاة)
+        $oldBookings = Booking::where('tenant_id', $userId)
+            ->where(function ($q) use ($today) {
+                $q->where('end_date', '<', $today)
+                  ->orWhere('status', 'canceled');
+            })
+            ->orderBy('end_date', 'desc')
+            ->get();
+
+        return response()->json([
+            'new' => $newBookings,
+            'current' => $currentBookings,
+            'old' => $oldBookings,
+        ]);
     }
 
     /**

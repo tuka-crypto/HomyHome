@@ -9,4 +9,5 @@ class Apartment extends Model
 {
     /** @use HasFactory<\Database\Factories\ApartmentFactory> */
     use HasFactory;
+    
 }

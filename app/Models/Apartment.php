@@ -7,7 +7,23 @@ use Illuminate\Database\Eloquent\Model;
 
 class Apartment extends Model
 {
+    protected $fillable = [
+        'owner_id',
+        'city',
+        'country',
+        'address',
+        'price',
+        'discreption',
+        'is_available',
+        'number_of_room',
+        'space'
+    ];
     /** @use HasFactory<\Database\Factories\ApartmentFactory> */
     use HasFactory;
-    
+    function bookings(){
+        return $this->hasMany(Booking::class,'apartment_id');
+    }
+    function reviews(){
+        return $this->hasMany(Review::class,'apartment_id');
+    }
 }

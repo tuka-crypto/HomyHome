@@ -20,17 +20,17 @@ class Booking extends Model
         'owner_approved',
         'booking_number',
     ];
-
-    // العلاقة مع الشقة
     public function apartment()
     {
         return $this->belongsTo(Apartment::class, 'apartment_id');
     }
-
-    // العلاقة مع المستأجر (المستخدم)
     public function tenant()
     {
         return $this->belongsTo(User::class, 'tenant_id');
+    }
+    public function review()
+    {
+        return $this->hasOne(Review::class, 'tenant_id');
     }
 }
 

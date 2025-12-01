@@ -13,7 +13,7 @@ class BookingController extends Controller
      */
     public function index()
     {
-       $userId = auth()->id(); // المستخدم الحالي
+        $userId = auth()->id();
         $today = Carbon::today();
 
         // الحجوزات الجديدة (pending)
@@ -24,17 +24,17 @@ class BookingController extends Controller
 
         // الحجوزات الحالية (confirmed والوقت الحالي بين start و end)
         $currentBookings = Booking::where('tenant_id', $userId)
-          ->where('status', 'confirmed')
-          ->where('start_date', '<=', $today)
-          ->where('end_date', '>=', $today)
-          ->orderBy('start_date', 'desc')
-          ->get();
+            ->where('status', 'confirmed')
+            ->where('start_date', '<=', $today)
+            ->where('end_date', '>=', $today)
+            ->orderBy('start_date', 'desc')
+            ->get();
 
         // الحجوزات القديمة (منتهية أو ملغاة)
         $oldBookings = Booking::where('tenant_id', $userId)
             ->where(function ($q) use ($today) {
                 $q->where('end_date', '<', $today)
-                  ->orWhere('status', 'canceled');
+                ->orWhere('status', 'canceled');
             })
             ->orderBy('end_date', 'desc')
             ->get();

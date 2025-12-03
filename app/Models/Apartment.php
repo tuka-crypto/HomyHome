@@ -26,4 +26,13 @@ class Apartment extends Model
     function reviews(){
         return $this->hasMany(Review::class,'apartment_id');
     }
+    public function images()
+{
+    return $this->hasMany(Apartment_image::class);
+}
+public function owner()
+{
+    return $this->belongsTo(User::class, 'owner_id');
+}
+
 }

@@ -1,41 +1,51 @@
 <?php
-
 namespace App\Http\Controllers;
 
+use App\Http\Requests\MyapartmentRequest;
 use App\Http\Requests\SearchRequest;
 use App\Models\Apartment;
 use App\Http\Requests\StoreApartmentRequest;
 use App\Http\Requests\UpdateApartmentRequest;
 use Illuminate\Support\Facades\Gate;
+use Symfony\Component\HttpFoundation\Request;
 class ApartmentController extends Controller
 {
-    public function index()
+        public function index()
     {
         Gate::authorize('viewAny', Apartment::class);
 
-        $apartments = Apartment::all();
+        $apartments = Apartment::with('images')->get();
+
         return response()->json([
             'data' => $apartments,
             'status' => 'success',
             'message' => 'Apartments indexed successfully.',
         ]);
     }
-
     public function store(StoreApartmentRequest $request)
     {
-       Gate::authorize('create', Apartment::class);
+        Gate::authorize('create', Apartment::class);
 
         $apartment = Apartment::create($request->validated());
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('apartments', 'public');
+                $apartment->images()->create(['image_path' => $path]);
+            }
+        }
+
         return response()->json([
-            'data' => $apartment,
+            'data' => $apartment->load('images'),
             'status' => 'success',
             'message' => 'Apartment created successfully.',
         ], 201);
     }
-
     public function show(Apartment $apartment)
     {
         Gate::authorize('view', $apartment);
+
+        $apartment->load('images');
 
         return response()->json([
             'data' => $apartment,
@@ -43,30 +53,29 @@ class ApartmentController extends Controller
             'message' => 'Apartment retrieved successfully.',
         ]);
     }
-
     public function update(UpdateApartmentRequest $request, Apartment $apartment)
     {
-       Gate::authorize('update', $apartment);
+        Gate::authorize('update', $apartment);
 
         $apartment->update($request->validated());
+
         return response()->json([
-            'data' => $apartment,
+            'data' => $apartment->load('images'),
             'status' => 'success',
             'message' => 'Apartment updated successfully.',
         ]);
     }
-
     public function destroy(Apartment $apartment)
     {
-     Gate::authorize('delete', $apartment);
+        Gate::authorize('delete', $apartment);
 
         $apartment->delete();
+
         return response()->json([
             'status' => 'success',
             'message' => 'Apartment deleted successfully.',
         ]);
     }
-
     public function search(SearchRequest $request)
     {
         Gate::authorize('viewAny', Apartment::class);
@@ -88,10 +97,11 @@ class ApartmentController extends Controller
         if ($request->has('number_of_room')) {
             $query->where('number_of_room', $request->input('number_of_room'));
         }
-         if ($request->has('space')) {
+        if ($request->has('space')) {
             $query->where('space', $request->input('space'));
         }
-        $apartments = $query->get();
+
+        $apartments = $query->with('images')->get();
 
         return response()->json([
             'data' => $apartments,
@@ -99,4 +109,14 @@ class ApartmentController extends Controller
             'message' => 'Search completed successfully.',
         ]);
     }
+    public function myApartments(MyapartmentRequest $request)
+{
+    $owner=$request->user();
+    $apartments = $owner->apartments()->with('images')->get();
+    return response()->json([
+        'data' => $apartments,
+        'status' => 'success',
+        'message' => 'Apartments retrieved successfully for this owner.',
+    ]);
+}
 }

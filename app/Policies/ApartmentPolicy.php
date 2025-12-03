@@ -1,102 +1,30 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Policies;
 
-use App\Http\Requests\SearchRequest;
+use App\Models\User;
 use App\Models\Apartment;
-use App\Http\Requests\StoreApartmentRequest;
-use App\Http\Requests\UpdateApartmentRequest;
-use Illuminate\Support\Facades\Gate;
-class ApartmentController extends Controller
+
+class ApartmentPolicy
 {
-    public function index()
+    public function viewAny(?User $user): bool
     {
-        Gate::authorize('viewAny', Apartment::class);
-
-        $apartments = Apartment::all();
-        return response()->json([
-            'data' => $apartments,
-            'status' => 'success',
-            'message' => 'Apartments indexed successfully.',
-        ]);
+        return true;
     }
-
-    public function store(StoreApartmentRequest $request)
+    public function view(?User $user, Apartment $apartment): bool
     {
-       Gate::authorize('create', Apartment::class);
-
-        $apartment = Apartment::create($request->validated());
-        return response()->json([
-            'data' => $apartment,
-            'status' => 'success',
-            'message' => 'Apartment created successfully.',
-        ], 201);
+        return true;
     }
-
-    public function show(Apartment $apartment)
+    public function create(User $user): bool
     {
-        Gate::authorize('view', $apartment);
-
-        return response()->json([
-            'data' => $apartment,
-            'status' => 'success',
-            'message' => 'Apartment retrieved successfully.',
-        ]);
+        return $user->isOwner();
     }
-
-    public function update(UpdateApartmentRequest $request, Apartment $apartment)
+    public function update(User $user, Apartment $apartment): bool
     {
-       Gate::authorize('update', $apartment);
-
-        $apartment->update($request->validated());
-        return response()->json([
-            'data' => $apartment,
-            'status' => 'success',
-            'message' => 'Apartment updated successfully.',
-        ]);
+        return $user->isOwner();
     }
-
-    public function destroy(Apartment $apartment)
+    public function delete(User $user, Apartment $apartment): bool
     {
-     Gate::authorize('delete', $apartment);
-
-        $apartment->delete();
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Apartment deleted successfully.',
-        ]);
-    }
-
-    public function search(SearchRequest $request)
-    {
-        Gate::authorize('viewAny', Apartment::class);
-
-        $query = Apartment::query();
-
-        if ($request->has('city')) {
-            $query->where('city', $request->input('city'));
-        }
-        if ($request->has('country')) {
-            $query->where('country', $request->input('country'));
-        }
-        if ($request->has('min_price')) {
-            $query->where('price', '>=', $request->input('min_price'));
-        }
-        if ($request->has('max_price')) {
-            $query->where('price', '<=', $request->input('max_price'));
-        }
-        if ($request->has('number_of_room')) {
-            $query->where('number_of_room', $request->input('number_of_room'));
-        }
-         if ($request->has('space')) {
-            $query->where('space', $request->input('space'));
-        }
-        $apartments = $query->get();
-
-        return response()->json([
-            'data' => $apartments,
-            'status' => 'success',
-            'message' => 'Search completed successfully.',
-        ]);
+        return $user->isOwner();
     }
 }

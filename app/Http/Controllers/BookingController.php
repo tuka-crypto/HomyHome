@@ -2,95 +2,77 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BookingRequest;
 use App\Models\Booking;
-use App\Http\Requests\StoreBookingRequest;
-use App\Http\Requests\UpdateBookingRequest;
-use Carbon\Carbon;
+use App\Models\Apartment;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
+
 class BookingController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function myBookings(BookingRequest $request)
     {
-        $userId = auth()->id();
-        $today = Carbon::today();
-
-        // الحجوزات الجديدة (pending)
-        $newBookings = Booking::where('tenant_id', $userId)
-            ->where('status', 'pending')
+        $bookings = Booking::with('apartment')
+            ->where('tenant_id', $request->user()->id)
             ->orderBy('start_date', 'desc')
-            ->get();
-
-        // الحجوزات الحالية (confirmed والوقت الحالي بين start و end)
-        $currentBookings = Booking::where('tenant_id', $userId)
-            ->where('status', 'confirmed')
-            ->where('start_date', '<=', $today)
-            ->where('end_date', '>=', $today)
-            ->orderBy('start_date', 'desc')
-            ->get();
-
-        // الحجوزات القديمة (منتهية أو ملغاة)
-        $oldBookings = Booking::where('tenant_id', $userId)
-            ->where(function ($q) use ($today) {
-                $q->where('end_date', '<', $today)
-                ->orWhere('status', 'canceled');
-            })
-            ->orderBy('end_date', 'desc')
             ->get();
 
         return response()->json([
-            'new' => $newBookings,
-            'current' => $currentBookings,
-            'old' => $oldBookings,
+            'data'    => $bookings,
+            'status'  => 'success',
+            'message' => 'Bookings retrieved successfully.',
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+    public function store(BookingRequest $request)
+{
+    Gate::authorize('create',Booking::class);
+    $validated = $request->validate([
+        'apartment_id' => 'required|exists:apartments,id',
+        'start_date'   => 'required|date|after_or_equal:today',
+        'end_date'     => 'required|date|after:start_date',
+        'guest_count'  => 'required|integer|min:1',
+    ]);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreBookingRequest $request)
-    {
-        //
-    }
+    $apartment = Apartment::findOrFail($validated['apartment_id']);
+    $days = (new \DateTime($validated['end_date']))->diff(new \DateTime($validated['start_date']))->days;
+    $totalPrice = $apartment->price * $days;
+    $booking = Booking::create([
+        'apartment_id'   => $apartment->id,
+        'tenant_id'      => $request->user()->id,
+        'start_date'     => $validated['start_date'],
+        'end_date'       => $validated['end_date'],
+        'guest_count'    => $validated['guest_count'],
+        'total_price'    => $totalPrice,
+        'status'         => 'pending',       // يبدأ كـ pending
+        'owner_approved' => false,           // المالك لسه ما وافق
+        'booking_number' => Str::uuid(),
+    ]);
+    return response()->json([
+        'data'    => $booking->load('apartment'),
+        'status'  => 'success',
+        'message' => 'Booking request submitted. Waiting for owner approval.',
+    ], 201);
+}
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Booking $booking)
-    {
-        //
-    }
+    public function update(BookingRequest $request, Booking $booking)
+{
+    Gate::authorize('update',$booking);
+    $validated = $request->validate([
+        'start_date'  => 'sometimes|date|after_or_equal:today',
+        'end_date'    => 'sometimes|date|after:start_date',
+        'guest_count' => 'sometimes|integer|min:1',
+    ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Booking $booking)
-    {
-        //
-    }
+    $booking->update(array_merge($validated, [
+        'status'         => 'pending',   // يرجع Pending
+        'owner_approved' => false,       // يحتاج موافقة جديدة
+    ]));
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateBookingRequest $request, Booking $booking)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Booking $booking)
-    {
-        //
-    }
+    return response()->json([
+        'data'    => $booking->load('apartment'),
+        'status'  => 'success',
+        'message' => 'Booking update submitted. Waiting for owner approval.',
+    ]);
+}
 }

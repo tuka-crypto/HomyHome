@@ -125,4 +125,61 @@ public function logout(Request $request)
             ], 500);
         }
     }
+
+    public function pendingUsers(Request $request)
+    {
+        if (!$request->user()->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $users = User::where('is_approved', false)->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $users,
+            'message'=> 'Pending users retrieved successfully.'
+        ]);
+    }
+    public function approveUser(Request $request, User $user)
+    {
+        if (!$request->user()->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $user->update(['is_approved' => true]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'User approved successfully.',
+            'data'    => $user
+        ]);
+    }
+    public function rejectUser(Request $request, User $user)
+    {
+        if (!$request->user()->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $user->update(['is_approved' => false]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'User rejected successfully.',
+            'data'    => $user
+        ]);
+    }
+    public function deleteUser(Request $request, User $user)
+    {
+        if (!$request->user()->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $user->delete();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'User deleted successfully.'
+        ]);
+    }
 }
+

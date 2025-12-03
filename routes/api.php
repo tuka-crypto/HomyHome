@@ -12,6 +12,14 @@ Route::post('/signup',[AuthController::class,'signup']);
 Route::post('/signin',[AuthController::class,'signin']);
 Route::post('/logout',[AuthController::class,'logout'])->middleware('auth:sanctum');
 
+//approved and reject the admin to auth
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::get('/users/pending', [AuthController::class, 'pendingUsers']);
+    Route::put('/users/{user}/approve', [AuthController::class, 'approveUser']);
+    Route::put('/users/{user}/reject', [AuthController::class, 'rejectUser']);
+    Route::delete('/users/{user}', [AuthController::class, 'deleteUser']);
+});
+
 //apartment routes for all
     Route::get('/apartments', [ApartmentController::class, 'index']);
     Route::get('/apartments/{apartment}', [ApartmentController::class, 'show']);
@@ -36,7 +44,11 @@ Route::middleware(['auth:sanctum', 'role:tenant'])->group(function () {
     Route::put('/bookings/{booking}', [BookingController::class, 'update']);
     Route::get('/bookings/my', [BookingController::class, 'myBookings']);
 });
-
+// approved and reject owner to booking
+Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
+    Route::put('/bookings/{booking}/approve', [BookingController::class, 'approve']);
+    Route::put('/bookings/{booking}/reject', [BookingController::class, 'reject']);
+});
 // review route
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']);

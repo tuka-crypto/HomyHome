@@ -75,4 +75,36 @@ class BookingController extends Controller
         'message' => 'Booking update submitted. Waiting for owner approval.',
     ]);
 }
+
+    public function approve(BookingRequest $request, Booking $booking)
+    {
+        Gate::authorize('approve', $booking);
+
+        $booking->update([
+            'owner_approved' => true,
+            'status'         => 'confirmed',
+        ]);
+
+        return response()->json([
+            'data'    => $booking->load('apartment'),
+            'status'  => 'success',
+            'message' => 'Booking approved by owner.',
+        ]);
+    }
+    public function reject(BookingRequest $request, Booking $booking)
+    {
+        Gate::authorize('reject', $booking);
+
+        $booking->update([
+            'owner_approved' => false,
+            'status'         => 'canceled',
+        ]);
+
+        return response()->json([
+            'data'    => $booking->load('apartment'),
+            'status'  => 'success',
+            'message' => 'Booking rejected by owner.',
+        ]);
+    }
 }
+

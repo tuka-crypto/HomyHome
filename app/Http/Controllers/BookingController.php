@@ -106,5 +106,27 @@ class BookingController extends Controller
             'message' => 'Booking rejected by owner.',
         ]);
     }
+    public function pendingBookingsForOwner(BookingRequest $request)
+{
+    // تأكد أن المستخدم الحالي هو مالك
+    if (!$request->user()->isOwner()) {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+
+    // جلب الحجوزات المعلقة المرتبطة بشقق هذا المالك
+    $bookings = Booking::with('apartment', 'tenant')
+        ->whereHas('apartment', function ($query) use ($request) {
+            $query->where('owner_id', $request->user()->id);
+        })
+        ->where('status', 'pending')
+        ->orderBy('start_date', 'asc')
+        ->get();
+
+    return response()->json([
+        'status'  => 'success',
+        'data'    => $bookings,
+        'message' => 'Pending bookings retrieved successfully.',
+    ]);
+}
 }
 

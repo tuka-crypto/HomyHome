@@ -46,6 +46,7 @@ Route::middleware(['auth:sanctum', 'role:tenant'])->group(function () {
 });
 // approved and reject owner to booking
 Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
+    Route::get('/bookings/pending', [BookingController::class, 'pendingBookingsForOwner']);
     Route::put('/bookings/{booking}/approve', [BookingController::class, 'approve']);
     Route::put('/bookings/{booking}/reject', [BookingController::class, 'reject']);
 });

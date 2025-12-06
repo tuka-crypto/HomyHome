@@ -18,10 +18,10 @@ return new class extends Migration
             $table->string('mobile_phone')->unique();
             $table->string('password');
             $table->string('profile_image')->nullable();
-            $table->String('id_card_image')->nullable();
-            $table->enum('role', ['owner', 'tenant']);
+            $table->string('id_card_image')->nullable();
+            $table->enum('role', ['owner', 'tenant','admin'])->default('tenant');
             $table->date('date_of_birth')->nullable();
-            $table->boolean('is_approved');
+            $table->boolean('is_approved')->default(false);
             $table->rememberToken();
             $table->timestamps();
         });

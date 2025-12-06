@@ -3,7 +3,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage as FacadesStorage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -26,16 +27,21 @@ class AuthController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'data is not valid',
+                'message' => 'data is invalid',
                 'errors' => $validator->errors()
             ], 422);
         }
+        $profilePath = $request->file('profile_image')->storeAs(
+            'profiles',
+            uniqid().'_'.$request->file('profile_image')->getClientOriginalName(),
+            'public'
+        );
 
-        // رفع الصور
-        $profilePath = $request->file('profile_image')->store('profiles', 'public');
-        $idCardPath = $request->file('id_card_image')->store('id_cards', 'public');
-
-        // إنشاء المستخدم
+        $idCardPath = $request->file('id_card_image')->storeAs(
+            'id_cards',
+            uniqid().'_'.$request->file('id_card_image')->getClientOriginalName(),
+            'public'
+        );
         $user = User::create([
             'mobile_phone' => $request->mobile_phone,
             'password' => Hash::make($request->password),
@@ -50,18 +56,59 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'register successfully, pending admin approval',
+            'message' => 'sign up is successfully, waiting admin approved',
             'data' => $user
         ], 201);
 
     } catch (\Exception $e) {
-        if (isset($profilePath)) FacadesStorage::disk('public')->delete($profilePath);
-        if (isset($idCardPath)) FacadesStorage::disk('public')->delete($idCardPath);
+        if (isset($profilePath)) Storage::disk('public')->delete($profilePath);
+        if (isset($idCardPath)) Storage::disk('public')->delete($idCardPath);
+
+        Log::error($e);
 
         return response()->json([
             'status' => 'error',
-            'message' => 'wrong in register',
-            'error' => $e->getMessage()
+            'message' => 'wrong in the sign up , try again'
+        ], 500);
+    }
+}
+public function adminLogin(Request $request)
+{
+    try {
+        $request->validate([
+            'mobile_phone' => 'required',
+            'password' => 'required'
+        ]);
+
+        $user = User::where('mobile_phone', $request->mobile_phone)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'Invalid credentials'
+            ], 401);
+        }
+        if (!$user->isAdmin()) {
+            return response()->json([
+                'message' => 'Access denied. Admin only.'
+            ], 403);
+        }
+        $user->tokens()->delete();
+        $token = $user->createToken('admin_token')->plainTextToken;
+        return response()->json([
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'mobile_phone' => $user->mobile_phone,
+                'role' => $user->role,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error($e);
+        return response()->json([
+            'message' => 'Error in admin login'
         ], 500);
     }
 }
@@ -103,10 +150,11 @@ class AuthController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'failed in login',
-                'error' => $e->getMessage()
-            ], 500);
+            Log::error($e);
+        return response()->json([
+            'message' => 'wrong in sing in , try again'
+        ], 500);
+
         }
     }
 
@@ -119,9 +167,9 @@ public function logout(Request $request)
                 'message' => 'logout successfully'
             ]);
         } catch (\Exception $e) {
+            Log::error($e);
             return response()->json([
-                'message' => 'failed in logout',
-                'error' => $e->getMessage()
+            'message' => 'wrong in logout ,try again'
             ], 500);
         }
     }

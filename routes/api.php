@@ -6,14 +6,13 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ReviewController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
 //auth routes
 Route::post('/signup',[AuthController::class,'signup']);
 Route::post('/signin',[AuthController::class,'signin']);
 Route::post('/logout',[AuthController::class,'logout'])->middleware('auth:sanctum');
-
+Route::post('/admin/login', [AuthController::class, 'adminLogin']);
 //approved and reject the admin to auth
-Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/users/pending', [AuthController::class, 'pendingUsers']);
     Route::put('/users/{user}/approve', [AuthController::class, 'approveUser']);
     Route::put('/users/{user}/reject', [AuthController::class, 'rejectUser']);

@@ -11,6 +11,7 @@ Route::post('/signup',[AuthController::class,'signup']);
 Route::post('/signin',[AuthController::class,'signin']);
 Route::post('/logout',[AuthController::class,'logout'])->middleware('auth:sanctum');
 Route::post('/admin/login', [AuthController::class, 'adminLogin']);
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 //approved and reject the admin to auth
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/users/pending', [AuthController::class, 'pendingUsers']);

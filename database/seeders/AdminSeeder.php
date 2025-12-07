@@ -17,7 +17,7 @@ class AdminSeeder extends Seeder
         User::create([
             'first_name'   => 'karam',
             'last_name'    => 'alahmad',
-            'mobile_phone' => '0937178880',
+            'mobile_phone' => '0963937178880',
             'password'     => Hash::make('admin123'),
             'role'         => 'admin',
             'is_approved'  => true,

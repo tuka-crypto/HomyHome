@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Http;
+use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -79,84 +81,70 @@ public function adminLogin(Request $request)
             'mobile_phone' => 'required',
             'password' => 'required'
         ]);
+        $user = User::where('mobile_phone', $request->mobile_phone)->first();
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Invalid credentials'], 401);
+        }
+        if (!$user->isAdmin()) {
+            return response()->json(['message' => 'Access denied. Admin only.'], 403);
+        }
+        $otp = rand(100000, 999999);
+        $user->update([
+            'otp_code' => $otp,
+            'otp_expires_at' => Carbon::now()->addMinutes(5),
+        ]);
+        $instanceId = env('ULTRAMSG_INSTANCE_ID');
+        $token = env('ULTRAMSG_TOKEN');
+
+        Http::post("https://api.ultramsg.com/$instanceId/messages/chat", [
+            'token' => $token,
+            'to'    => $user->mobile_phone,
+            'body'  => "your pin code is :$otp",
+        ]);
+
+        return response()->json(['message' => 'send it in whatsapp']);
+    } catch (\Exception $e) {
+        Log::error($e);
+        return response()->json(['message' => 'Error in admin login'], 500);
+    }
+}
+public function signin(Request $request)
+{
+    try {
+        $request->validate([
+            'mobile_phone' => 'required',
+            'password' => 'required'
+        ]);
 
         $user = User::where('mobile_phone', $request->mobile_phone)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'message' => 'Invalid credentials'
-            ], 401);
+            return response()->json(['message' => 'Invalid credentials'], 401);
         }
-        if (!$user->isAdmin()) {
-            return response()->json([
-                'message' => 'Access denied. Admin only.'
-            ], 403);
+
+        if (!$user->is_approved) {
+            return response()->json(['message' => 'pending admin approval'], 403);
         }
-        $user->tokens()->delete();
-        $token = $user->createToken('admin_token')->plainTextToken;
-        return response()->json([
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'mobile_phone' => $user->mobile_phone,
-                'role' => $user->role,
-                'first_name' => $user->first_name,
-                'last_name' => $user->last_name
-            ]
+        $otp = rand(100000, 999999);
+        $user->update([
+            'otp_code' => $otp,
+            'otp_expires_at' => Carbon::now()->addMinutes(5),
         ]);
-        
+        $instanceId = env('ULTRAMSG_INSTANCE_ID');
+        $token = env('ULTRAMSG_TOKEN');
+
+        Http::post("https://api.ultramsg.com/$instanceId/messages/chat", [
+            'token' => $token,
+            'to'    => $user->mobile_phone,
+            'body'  => "your pin code is :$otp",
+        ]);
+
+        return response()->json(['message' => 'send it in whatsapp']);
     } catch (\Exception $e) {
         Log::error($e);
-        return response()->json([
-            'message' => 'Error in admin login'
-        ], 500);
+        return response()->json(['message' => 'wrong in sign in , try again'], 500);
     }
 }
-    public function signin(Request $request)
-    {
-        try {
-            $request->validate([
-                'mobile_phone' => 'required',
-                'password' => 'required'
-            ]);
-
-            $user = User::where('mobile_phone', $request-> mobile_phone)->first();
-
-            if (!$user || !Hash::check($request->password, $user->password)) {
-                throw ValidationException::withMessages([
-                    'mobile_phone' => ['data is not correct'],
-                ]);
-            }
-
-            if (!$user->is_approved) {
-                return response()->json([
-                    'message' => 'pending admin approval'
-                ], 403);
-            }
-            $user->tokens()->delete();
-            
-            $token = $user->createToken('auth_token')->plainTextToken;
-
-            return response()->json([
-                'token' => $token,
-                'user' => [
-                    'id' => $user->id,
-                    'mobile_phone' => $user->mobile_phone,
-                    'role' => $user->role,
-                    'first_name' => $user->first_name,
-                    'last_name' => $user->last_name,
-                    'has_completed_profile' => !is_null($user->first_name) && !is_null($user->last_name)
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error($e);
-        return response()->json([
-            'message' => 'wrong in sing in , try again'
-        ], 500);
-
-        }
-    }
 
 public function logout(Request $request)
     {
@@ -174,34 +162,67 @@ public function logout(Request $request)
         }
     }
 
+public function verifyOtp(Request $request)
+{
+    $request->validate([
+        'mobile_phone' => 'required',
+        'otp_code' => 'required'
+    ]);
+
+    $user = User::where('mobile_phone', $request->mobile_phone)->first();
+
+    if (!$user) {
+        return response()->json(['message' => 'User not found'], 404);
+    }
+
+    if ((string)$user->otp_code !== (string)$request->otp_code) {
+        return response()->json(['message' => 'Invalid OTP'], 401);
+    }
+
+    if (Carbon::now()->greaterThan($user->otp_expires_at)) {
+        return response()->json(['message' => 'OTP expired'], 403);
+    }
+
+    $user->update([
+        'otp_code' => null,
+        'otp_expires_at' => null,
+    ]);
+
+    $user->tokens()->delete();
+    $token = $user->createToken('auth_token')->plainTextToken;
+
+    return response()->json([
+        'token' => $token,
+        'user' => $user,
+    ]);
+}
+
     public function pendingUsers(Request $request)
     {
         if (!$request->user()->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-
         $users = User::where('is_approved', false)->get();
-
         return response()->json([
             'status' => 'success',
             'data'   => $users,
             'message'=> 'Pending users retrieved successfully.'
         ]);
     }
+
     public function approveUser(Request $request, User $user)
     {
         if (!$request->user()->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-
         $user->update(['is_approved' => true]);
-
         return response()->json([
             'status'  => 'success',
             'message' => 'User approved successfully.',
             'data'    => $user
         ]);
     }
+
     public function rejectUser(Request $request, User $user)
     {
         if (!$request->user()->isAdmin()) {
@@ -216,6 +237,7 @@ public function logout(Request $request)
             'data'    => $user
         ]);
     }
+
     public function deleteUser(Request $request, User $user)
     {
         if (!$request->user()->isAdmin()) {

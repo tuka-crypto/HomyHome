@@ -149,6 +149,22 @@ class ApartmentController extends Controller
             'message' => 'Apartments retrieved successfully for this owner.',
         ]);
     }
+    // ✅ الأدمن يشوف كل الشقق المعلقة (pending)
+public function pendingApartments()
+{
+    Gate::authorize('viewPending', Apartment::class);
+
+    $apartments = Apartment::with('images', 'owner')
+        ->where('status', 'pending')
+        ->orderBy('created_at', 'asc')
+        ->get();
+
+    return response()->json([
+        'data'    => $apartments,
+        'status'  => 'success',
+        'message' => 'Pending apartments retrieved successfully.',
+    ]);
+}
 
     // ✅ الأدمن يوافق على شقة
     public function approve(Apartment $apartment)

@@ -27,6 +27,11 @@ class ApartmentPolicy
     {
         return $user->isOwner();
     }
+     public function viewPending(User $user): bool
+    {
+        return $user->isAdmin();
+    }
+
     public function approve(User $user, Apartment $apartment): bool
 {
     return $user->isAdmin(); // فقط الأدمن يقدر يوافق

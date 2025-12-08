@@ -36,6 +36,7 @@ Route::middleware(['auth', 'owner'])->group(function () {
 });
 // Admin-only routes for approving/rejecting apartments// ✅ فقط الأدمن يقدر يوافق أو يرفض
 Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/apartments/pending', [ApartmentController::class, 'pendingApartments']);
     Route::post('/apartments/{apartment}/approve', [ApartmentController::class, 'approve']);
     Route::post('/apartments/{apartment}/reject', [ApartmentController::class, 'reject']);
 });

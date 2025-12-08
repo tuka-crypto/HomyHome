@@ -27,4 +27,13 @@ class ApartmentPolicy
     {
         return $user->isOwner();
     }
+    public function approve(User $user, Apartment $apartment): bool
+{
+    return $user->isAdmin(); // فقط الأدمن يقدر يوافق
+}
+
+public function reject(User $user, Apartment $apartment): bool
+{
+    return $user->isAdmin(); // فقط الأدمن يقدر يرفض
+}
 }

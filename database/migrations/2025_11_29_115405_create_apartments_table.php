@@ -24,6 +24,7 @@ return new class extends Migration
             $table->decimal('avarage_rating', 3, 2)->nullable();
             $table->integer('number_of_room');
             $table->integer('space');
+            $table->string('status')->default('pending'); // pending, approved, rejected
             $table->timestamps();
         });
     }

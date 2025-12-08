@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 
 class BookingController extends Controller
 {
+    // ✅ المستأجر يشوف حجوزاته
     public function myBookings(BookingRequest $request)
     {
         $bookings = Booking::with('apartment')
@@ -24,58 +25,65 @@ class BookingController extends Controller
         ]);
     }
 
+    // ✅ المستأجر يعمل حجز جديد
     public function store(BookingRequest $request)
-{
-    Gate::authorize('create',Booking::class);
-    $validated = $request->validate([
-        'apartment_id' => 'required|exists:apartments,id',
-        'start_date'   => 'required|date|after_or_equal:today',
-        'end_date'     => 'required|date|after:start_date',
-        'guest_count'  => 'required|integer|min:1',
-    ]);
+    {
+        Gate::authorize('create', Booking::class);
 
-    $apartment = Apartment::findOrFail($validated['apartment_id']);
-    $days = (new \DateTime($validated['end_date']))->diff(new \DateTime($validated['start_date']))->days;
-    $totalPrice = $apartment->price * $days;
-    $booking = Booking::create([
-        'apartment_id'   => $apartment->id,
-        'tenant_id'      => $request->user()->id,
-        'start_date'     => $validated['start_date'],
-        'end_date'       => $validated['end_date'],
-        'guest_count'    => $validated['guest_count'],
-        'total_price'    => $totalPrice,
-        'status'         => 'pending',       // يبدأ كـ pending
-        'owner_approved' => false,           // المالك لسه ما وافق
-        'booking_number' => Str::uuid(),
-    ]);
-    return response()->json([
-        'data'    => $booking->load('apartment'),
-        'status'  => 'success',
-        'message' => 'Booking request submitted. Waiting for owner approval.',
-    ], 201);
-}
+        $validated = $request->validate([
+            'apartment_id' => 'required|exists:apartments,id',
+            'start_date'   => 'required|date|after_or_equal:today',
+            'end_date'     => 'required|date|after:start_date',
+            'guest_count'  => 'required|integer|min:1',
+        ]);
 
+        $apartment = Apartment::findOrFail($validated['apartment_id']);
+        $days = (new \DateTime($validated['end_date']))->diff(new \DateTime($validated['start_date']))->days;
+        $totalPrice = $apartment->price * $days;
+
+        $booking = Booking::create([
+            'apartment_id'   => $apartment->id,
+            'tenant_id'      => $request->user()->id,
+            'start_date'     => $validated['start_date'],
+            'end_date'       => $validated['end_date'],
+            'guest_count'    => $validated['guest_count'],
+            'total_price'    => $totalPrice,
+            'status'         => 'pending',
+            'owner_approved' => false,
+            'booking_number' => Str::uuid(),
+        ]);
+
+        return response()->json([
+            'data'    => $booking->load('apartment'),
+            'status'  => 'success',
+            'message' => 'Booking request submitted. Waiting for owner approval.',
+        ], 201);
+    }
+
+    // ✅ المستأجر يعدل حجوزاته فقط
     public function update(BookingRequest $request, Booking $booking)
-{
-    Gate::authorize('update',$booking);
-    $validated = $request->validate([
-        'start_date'  => 'sometimes|date|after_or_equal:today',
-        'end_date'    => 'sometimes|date|after:start_date',
-        'guest_count' => 'sometimes|integer|min:1',
-    ]);
+    {
+        Gate::authorize('update', $booking);
 
-    $booking->update(array_merge($validated, [
-        'status'         => 'pending',   // يرجع Pending
-        'owner_approved' => false,       // يحتاج موافقة جديدة
-    ]));
+        $validated = $request->validate([
+            'start_date'  => 'sometimes|date|after_or_equal:today',
+            'end_date'    => 'sometimes|date|after:start_date',
+            'guest_count' => 'sometimes|integer|min:1',
+        ]);
 
-    return response()->json([
-        'data'    => $booking->load('apartment'),
-        'status'  => 'success',
-        'message' => 'Booking update submitted. Waiting for owner approval.',
-    ]);
-}
+        $booking->update(array_merge($validated, [
+            'status'         => 'pending',
+            'owner_approved' => false,
+        ]));
 
+        return response()->json([
+            'data'    => $booking->load('apartment'),
+            'status'  => 'success',
+            'message' => 'Booking update submitted. Waiting for owner approval.',
+        ]);
+    }
+
+    // ✅ المالك يوافق على الحجز
     public function approve(BookingRequest $request, Booking $booking)
     {
         Gate::authorize('approve', $booking);
@@ -91,6 +99,8 @@ class BookingController extends Controller
             'message' => 'Booking approved by owner.',
         ]);
     }
+
+    // ✅ المالك يرفض الحجز
     public function reject(BookingRequest $request, Booking $booking)
     {
         Gate::authorize('reject', $booking);
@@ -106,27 +116,22 @@ class BookingController extends Controller
             'message' => 'Booking rejected by owner.',
         ]);
     }
+
+    // ✅ المالك يشوف الحجوزات المعلقة لشققه
     public function pendingBookingsForOwner(BookingRequest $request)
-{
-    // تأكد أن المستخدم الحالي هو مالك
-    if (!$request->user()->isOwner()) {
-        return response()->json(['message' => 'Unauthorized'], 403);
+    {
+        $bookings = Booking::with('apartment', 'tenant')
+            ->whereHas('apartment', function ($query) use ($request) {
+                $query->where('owner_id', $request->user()->id);
+            })
+            ->where('status', 'pending')
+            ->orderBy('start_date', 'asc')
+            ->get();
+
+        return response()->json([
+            'status'  => 'success',
+            'data'    => $bookings,
+            'message' => 'Pending bookings retrieved successfully.',
+        ]);
     }
-
-    // جلب الحجوزات المعلقة المرتبطة بشقق هذا المالك
-    $bookings = Booking::with('apartment', 'tenant')
-        ->whereHas('apartment', function ($query) use ($request) {
-            $query->where('owner_id', $request->user()->id);
-        })
-        ->where('status', 'pending')
-        ->orderBy('start_date', 'asc')
-        ->get();
-
-    return response()->json([
-        'status'  => 'success',
-        'data'    => $bookings,
-        'message' => 'Pending bookings retrieved successfully.',
-    ]);
 }
-}
-

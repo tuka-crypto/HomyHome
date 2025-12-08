@@ -21,16 +21,23 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 });
 
 //apartment routes for all
+Route::middleware(['auth'])->group(function () {
     Route::get('/apartments', [ApartmentController::class, 'index']);
     Route::get('/apartments/{apartment}', [ApartmentController::class, 'show']);
     Route::get('/apartments/search', [ApartmentController::class, 'search']);
+});
 
 // Owner-only routes about apartments
-Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
+Route::middleware(['auth', 'owner'])->group(function () {
     Route::get('/apartments/my', [ApartmentController::class, 'myApartments']);
     Route::post('/apartments', [ApartmentController::class, 'store']);
     Route::put('/apartments/{apartment}', [ApartmentController::class, 'update']);
     Route::delete('/apartments/{apartment}', [ApartmentController::class, 'destroy']);
+});
+// Admin-only routes for approving/rejecting apartments// ✅ فقط الأدمن يقدر يوافق أو يرفض
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::post('/apartments/{apartment}/approve', [ApartmentController::class, 'approve']);
+    Route::post('/apartments/{apartment}/reject', [ApartmentController::class, 'reject']);
 });
 
 // images routes for apartment images(index, store,delete)
@@ -39,16 +46,17 @@ Route::post('/apartments/{apartment}/images', [ApartmentImageController::class, 
 Route::delete('/apartments/{apartment}/images/{image}', [ApartmentImageController::class, 'destroy']);
 
 // booking routes for tenant
-Route::middleware(['auth:sanctum', 'role:tenant'])->group(function () {
+Route::middleware(['auth', 'tenant'])->group(function () {
+    Route::get('/my-bookings', [BookingController::class, 'myBookings']);
     Route::post('/bookings', [BookingController::class, 'store']);
     Route::put('/bookings/{booking}', [BookingController::class, 'update']);
-    Route::get('/bookings/my', [BookingController::class, 'myBookings']);
 });
+
 // approved and reject owner to booking
-Route::middleware(['auth:sanctum', 'role:owner'])->group(function () {
-    Route::get('/bookings/pending', [BookingController::class, 'pendingBookingsForOwner']);
-    Route::put('/bookings/{booking}/approve', [BookingController::class, 'approve']);
-    Route::put('/bookings/{booking}/reject', [BookingController::class, 'reject']);
+Route::middleware(['auth', 'owner'])->group(function () {
+    Route::get('/owner/pending-bookings', [BookingController::class, 'pendingBookingsForOwner']);
+    Route::post('/bookings/{booking}/approve', [BookingController::class, 'approve']);
+    Route::post('/bookings/{booking}/reject', [BookingController::class, 'reject']);
 });
 // review route
 Route::middleware(['auth:sanctum'])->group(function () {

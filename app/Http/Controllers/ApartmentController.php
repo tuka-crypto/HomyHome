@@ -7,6 +7,7 @@ use App\Http\Requests\SearchRequest;
 use App\Models\Apartment;
 use App\Http\Requests\StoreApartmentRequest;
 use App\Http\Requests\UpdateApartmentRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 class ApartmentController extends Controller
@@ -34,7 +35,17 @@ class ApartmentController extends Controller
 
         $apartment = Apartment::create(array_merge(
             $request->validated(),
-            ['status' => 'pending'] // يبدأ كـ pending
+            [   'status' => 'pending',
+                'owner_id' => $request->user()->id,
+                'city'=> $request->input('city'),
+                'country'=> $request->input('country'),
+                'address'=> $request->input('address'),
+                'price'=> $request->input('price'),
+                'number_of_room'=> $request->input('number_of_room'),
+                'space'=> $request->input('space'),
+                'discreption'=> $request->input('discreption'),
+                'is_available'=>$request->input('is_available')
+            ]
         ));
 
         if ($request->hasFile('images')) {
@@ -73,22 +84,32 @@ class ApartmentController extends Controller
     }
 
     // ✅ المالك يعدل شقته (لكن تظل بحاجة موافقة جديدة)
-    public function update(UpdateApartmentRequest $request, Apartment $apartment)
-    {
-        Gate::authorize('update', $apartment);
+   public function update(UpdateApartmentRequest $request, Apartment $apartment)
+{
+    Gate::authorize('update', $apartment);
 
-        $apartment->update(array_merge(
-            $request->validated(),
-            ['status' => 'pending'] // يرجع Pending بعد التعديل
-        ));
+    $data = $request->only([
+        'city',
+        'country',
+        'address',
+        'price',
+        'number_of_room',
+        'space',
+        'discreption',
+        'is_available'
+    ]);
 
-        return response()->json([
-            'data' => $apartment->load('images'),
-            'status' => 'success',
-            'message' => 'Apartment update submitted. Waiting for admin approval.',
-        ]);
-    }
+    // أضف الحالة pending دائمًا
+    $data['status'] = 'pending';
 
+    $apartment->update($data);
+
+    return response()->json([
+        'data' => $apartment->load('images'),
+        'status' => 'success',
+        'message' => 'Apartment update submitted. Waiting for admin approval.',
+    ]);
+}
     // ✅ المالك يحذف شقته
     public function destroy(Apartment $apartment)
     {
@@ -150,15 +171,12 @@ class ApartmentController extends Controller
         ]);
     }
     // ✅ الأدمن يشوف كل الشقق المعلقة (pending)
-public function pendingApartments()
+public function pendingApartments(Request $request)
 {
-    Gate::authorize('viewPending', Apartment::class);
-
-    $apartments = Apartment::with('images', 'owner')
-        ->where('status', 'pending')
-        ->orderBy('created_at', 'asc')
-        ->get();
-
+     if (!$request->user()->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        $apartments = Apartment::where('status', 'pending')->get();
     return response()->json([
         'data'    => $apartments,
         'status'  => 'success',

@@ -16,6 +16,7 @@ class Apartment extends Model
         'discreption',
         'is_available',
         'number_of_room',
+        'status',
         'space'
     ];
     /** @use HasFactory<\Database\Factories\ApartmentFactory> */

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('address',255);
             $table->decimal('price', 8, 2);
             $table->string('discreption',500);
-            $table->boolean('is_available');
+            $table->boolean('is_available')->default(true);
             $table->decimal('avarage_rating', 3, 2)->nullable();
             $table->integer('number_of_room');
             $table->integer('space');

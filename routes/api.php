@@ -18,27 +18,29 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::put('/users/{user}/approve', [AuthController::class, 'approveUser']);
     Route::put('/users/{user}/reject', [AuthController::class, 'rejectUser']);
     Route::delete('/users/{user}', [AuthController::class, 'deleteUser']);
+    Route::get('/apartments/pending', [ApartmentController::class, 'pendingApartments']);
 });
-
-//apartment routes for all
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/apartments', [ApartmentController::class, 'index']);
-    Route::get('/apartments/{apartment}', [ApartmentController::class, 'show']);
     Route::get('/apartments/search', [ApartmentController::class, 'search']);
+});
+Route::middleware(['auth:sanctum','owner'])->group(function() {
+    Route::post('/apartments', [ApartmentController::class, 'store']);
+    Route::get('/apartments/my', [ApartmentController::class, 'myApartments']);
+});
+Route::middleware(['auth:sanctum','admin'])->group(function() {
+    Route::post('/apartments/{apartment}/approve', [ApartmentController::class, 'approve']);
+    Route::post('/apartments/{apartment}/reject', [ApartmentController::class, 'reject']);
+});
+//apartment routes for all
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/apartments/{apartment}', [ApartmentController::class, 'show']);
 });
 
 // Owner-only routes about apartments
-Route::middleware(['auth', 'owner'])->group(function () {
-    Route::get('/apartments/my', [ApartmentController::class, 'myApartments']);
-    Route::post('/apartments', [ApartmentController::class, 'store']);
+Route::middleware(['auth:sanctum', 'owner'])->group(function () {
     Route::put('/apartments/{apartment}', [ApartmentController::class, 'update']);
     Route::delete('/apartments/{apartment}', [ApartmentController::class, 'destroy']);
-});
-// Admin-only routes for approving/rejecting apartments// ✅ فقط الأدمن يقدر يوافق أو يرفض
-Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/apartments/pending', [ApartmentController::class, 'pendingApartments']);
-    Route::post('/apartments/{apartment}/approve', [ApartmentController::class, 'approve']);
-    Route::post('/apartments/{apartment}/reject', [ApartmentController::class, 'reject']);
 });
 
 // images routes for apartment images(index, store,delete)
@@ -47,14 +49,14 @@ Route::post('/apartments/{apartment}/images', [ApartmentImageController::class, 
 Route::delete('/apartments/{apartment}/images/{image}', [ApartmentImageController::class, 'destroy']);
 
 // booking routes for tenant
-Route::middleware(['auth', 'tenant'])->group(function () {
+Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::get('/my-bookings', [BookingController::class, 'myBookings']);
     Route::post('/bookings', [BookingController::class, 'store']);
     Route::put('/bookings/{booking}', [BookingController::class, 'update']);
 });
 
 // approved and reject owner to booking
-Route::middleware(['auth', 'owner'])->group(function () {
+Route::middleware(['auth:sanctum', 'owner'])->group(function () {
     Route::get('/owner/pending-bookings', [BookingController::class, 'pendingBookingsForOwner']);
     Route::post('/bookings/{booking}/approve', [BookingController::class, 'approve']);
     Route::post('/bookings/{booking}/reject', [BookingController::class, 'reject']);

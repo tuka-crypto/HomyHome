@@ -29,7 +29,7 @@ class ApartmentPolicy
     }
      public function viewPending(User $user): bool
     {
-        return $user->isAdmin();
+        return true;
     }
 
     public function approve(User $user, Apartment $apartment): bool

@@ -1,15 +1,14 @@
 <?php
 namespace App\Http\Middleware;
-
 use Closure;
 use Illuminate\Http\Request;
 
-class OwnerMiddleware
+class TenantMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!$request->user() || !$request->user()->isOwner()) {
-            return response()->json(['message' => 'Unauthorized - Owners only'], 403);
+        if (!$request->user() || !$request->user()->isTenant()) {
+            return response()->json(['message' => 'Unauthorized - Tenants only'], 403);
         }
         return $next($request);
     }

@@ -23,6 +23,17 @@ class AdminSeeder extends Seeder
             'is_approved'  => true,
             'date_of_birth'=> '1990-01-01',
         ]);
+         User::create([
+            'first_name'   => 'tasnim',
+            'last_name'    => 'homsii',
+            'mobile_phone' => '0963938349118',
+            'password'     => Hash::make('tasnim1234'),
+            'role'         => 'owner',
+            'is_approved'  => false,
+            'date_of_birth'=> '2005-01-01',
+        ]);
+        
+
 
     }
 }

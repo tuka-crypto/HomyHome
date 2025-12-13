@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
-use Illuminate\Validation\ValidationException;
-
 class AuthController extends Controller
 {
     public function signup(Request $request)
@@ -67,7 +65,6 @@ class AuthController extends Controller
         if (isset($idCardPath)) Storage::disk('public')->delete($idCardPath);
 
         Log::error($e);
-
         return response()->json([
             'status' => 'error',
             'message' => 'wrong in the sign up , try again'
@@ -149,7 +146,7 @@ public function signin(Request $request)
 public function logout(Request $request)
     {
         try {
-            $request->user()->tokens()->delete();
+            $request->user()->currentAccessToken()->delete();
             
             return response()->json([
                 'message' => 'logout successfully'

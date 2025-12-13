@@ -53,6 +53,7 @@ Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
     Route::get('/my-bookings', [BookingController::class, 'myBookings']);
     Route::post('/bookings', [BookingController::class, 'store']);
     Route::put('/bookings/{booking}', [BookingController::class, 'update']);
+    Route::delete('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
 });
 
 // approved and reject owner to booking

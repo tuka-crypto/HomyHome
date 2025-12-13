@@ -1,9 +1,8 @@
 <?php
-
 namespace App\Http\Controllers;
-
 use App\Models\Review;
 use App\Models\Booking;
+use App\Models\Apartment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -21,23 +20,24 @@ class ReviewController extends Controller
             ->where('tenant_id', Auth::id())
             ->where('apartment_id', $request->apartment_id)
             ->first();
-
         if (!$booking) {
             return response()->json([
-                'message' => 'you cannot make the review if you dinnot have booking  '
+                'message' => 'you cannot add a review if you donnot booked this apartment'
+            ], 403);
+        }
+        if ($booking->status !== 'confirmed') {
+            return response()->json([
+                'message' => 'you can only review after approved your booking'
             ], 403);
         }
         $alreadyReviewed = Review::where('booking_id', $request->booking_id)
             ->where('tenant_id', Auth::id())
             ->exists();
-
         if ($alreadyReviewed) {
             return response()->json([
-                'message' => 'you make review about this apartment before'
+                'message' => 'you have already reviewed this apartment'
             ], 400);
         }
-
-
         $review = Review::create([
             'apartment_id' => $request->apartment_id,
             'tenant_id'    => Auth::id(),
@@ -45,10 +45,12 @@ class ReviewController extends Controller
             'rating'       => $request->rating,
             'comment'      => $request->comment,
         ]);
-
+        $apartment = Apartment::find($request->apartment_id);
+        $apartment->average_rating = $apartment->reviews()->avg('rating');
+        $apartment->save();
         return response()->json([
-            'message' => 'review created successfuly',
-            'review'  => $review
+            'message' => 'reviewd successfully',
+            'review'  => $review->load('apartment')
         ]);
     }
 }

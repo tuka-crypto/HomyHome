@@ -39,17 +39,14 @@ class AuthController extends Controller
             'profile_image' => $profilePath,
             'id_card_image' => $idCardPath,
         ]);
-
         return response()->json([
             'status' => 'success',
             'message' => 'sign up is successfully, waiting admin approved',
             'data' => $user
         ], 201);
-
     } catch (\Exception $e) {
         if (isset($profilePath)) Storage::disk('public')->delete($profilePath);
         if (isset($idCardPath)) Storage::disk('public')->delete($idCardPath);
-
         Log::error($e);
         return response()->json([
             'status' => 'Error',

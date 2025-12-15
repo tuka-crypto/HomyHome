@@ -17,26 +17,21 @@ class ApartmentImageController extends Controller
             'message' => 'Images retrieved successfully.',
         ]);
     }
-
     public function store(Request $request, Apartment $apartment)
     {
         $request->validate([
             'image' => 'required|image|mimes:jpg,jpeg,png|max:2048',
         ]);
-
-        $path = $request->file('image')->store('apartments', 'public');
-
+        $path = $request->file('image')->storeAs('apartments', uniqid().'_'.$request->file('image')->getClientOriginalName(), 'public');
         $image = $apartment->images()->create([
             'image_path' => $path,
         ]);
-
         return response()->json([
             'data' => $image,
             'status' => 'success',
             'message' => 'Image uploaded successfully.',
         ]);
     }
-
     public function destroy(Apartment $apartment, Apartment_image $image)
     {
         Storage::disk('public')->delete($image->image_path);

@@ -22,7 +22,7 @@ class OtpRequestue extends FormRequest
     public function rules(): array
     {
         return [
-        'mobile_phone' => 'required',
+        'mobile_phone' => 'required|regex:/^[0-9]{10,15}$/',
         'otp_code' => 'required'
         ];
     }

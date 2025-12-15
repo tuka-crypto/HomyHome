@@ -47,8 +47,9 @@ class ApartmentController extends Controller
                 $apartment->images()->create(['image_path' => $path]);
             }
         }
+        $apartment = Apartment::with('images')->find($apartment->id);
         return response()->json([
-            'data' => $apartment->load('images'),
+            'data' => $apartment,
             'status' => 'success',
             'message' => 'Apartment request submitted. Waiting for admin approval.',
         ], 201);
@@ -149,7 +150,7 @@ public function pendingApartments(Request $request)
     if (!$request->user()->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-        $apartments = Apartment::where('status', 'pending')->get();
+        $apartments = Apartment::where('status', 'pending')->with('images')->get();
     return response()->json([
         'data'    => $apartments,
         'status'  => 'success',

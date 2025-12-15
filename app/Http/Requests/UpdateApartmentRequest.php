@@ -28,7 +28,7 @@ class UpdateApartmentRequest extends FormRequest
         'price' => 'nullable|numeric',
         'number_of_room' => 'nullable|integer',
         'space' => 'nullable|integer',
-        'discreption' => 'nullable|string|max:500',
+        'description' => 'nullable|string|max:500',
         'is_available' => 'nullable|boolean',
     ];
     }

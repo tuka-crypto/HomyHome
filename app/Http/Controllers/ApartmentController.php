@@ -1,7 +1,5 @@
 <?php
-
 namespace App\Http\Controllers;
-
 use App\Http\Requests\MyapartmentRequest;
 use App\Http\Requests\SearchRequest;
 use App\Models\Apartment;
@@ -12,27 +10,23 @@ use Illuminate\Support\Facades\Gate;
 
 class ApartmentController extends Controller
 {
-    // ✅ عرض كل الشقق (لأي مستخدم)
+// show all the apartment to the user and with if statment that the status of apartment is approved
     public function index()
     {
         Gate::authorize('viewAny', Apartment::class);
-
         $apartments = Apartment::with('images')
-            ->where('status', 'approved') // فقط الشقق الموافق عليها
+            ->where('status', 'approved')
             ->get();
-
         return response()->json([
             'data' => $apartments,
             'status' => 'success',
             'message' => 'Apartments indexed successfully.',
         ]);
     }
-
-    // ✅ المالك يطلب إضافة شقة (تدخل كـ pending)
+    // add the owner the apartment and waiting approved from admin
     public function store(StoreApartmentRequest $request)
     {
         Gate::authorize('create', Apartment::class);
-
         $apartment = Apartment::create(array_merge(
             $request->validated(),
             [   'status' => 'pending',
@@ -43,51 +37,43 @@ class ApartmentController extends Controller
                 'price'=> $request->input('price'),
                 'number_of_room'=> $request->input('number_of_room'),
                 'space'=> $request->input('space'),
-                'discreption'=> $request->input('discreption'),
+                'description'=> $request->input('description'),
                 'is_available'=>$request->input('is_available')
             ]
         ));
-
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $image) {
                 $path = $image->store('apartments', 'public');
                 $apartment->images()->create(['image_path' => $path]);
             }
         }
-
         return response()->json([
             'data' => $apartment->load('images'),
             'status' => 'success',
             'message' => 'Apartment request submitted. Waiting for admin approval.',
         ], 201);
     }
-
-    // ✅ عرض شقة واحدة
+    // show the user one apartment and with if statment that the status of apartment is approved
     public function show(Apartment $apartment)
     {
         Gate::authorize('view', $apartment);
-
         if ($apartment->status !== 'approved') {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Apartment not approved yet.',
             ], 403);
         }
-
         $apartment->load('images');
-
         return response()->json([
             'data' => $apartment,
             'status' => 'success',
             'message' => 'Apartment retrieved successfully.',
         ]);
     }
-
-    // ✅ المالك يعدل شقته (لكن تظل بحاجة موافقة جديدة)
-   public function update(UpdateApartmentRequest $request, Apartment $apartment)
+//update the owner his apartment and waiting the approved from admin
+    public function update(UpdateApartmentRequest $request, Apartment $apartment)
 {
     Gate::authorize('update', $apartment);
-
     $data = $request->only([
         'city',
         'country',
@@ -95,41 +81,32 @@ class ApartmentController extends Controller
         'price',
         'number_of_room',
         'space',
-        'discreption',
+        'description',
         'is_available'
     ]);
-
-    // أضف الحالة pending دائمًا
     $data['status'] = 'pending';
-
     $apartment->update($data);
-
     return response()->json([
         'data' => $apartment->load('images'),
         'status' => 'success',
         'message' => 'Apartment update submitted. Waiting for admin approval.',
     ]);
 }
-    // ✅ المالك يحذف شقته
+// the owner delete his apartment
     public function destroy(Apartment $apartment)
     {
         Gate::authorize('delete', $apartment);
-
         $apartment->delete();
-
         return response()->json([
             'status' => 'success',
             'message' => 'Apartment deleted successfully.',
         ]);
     }
-
-    // ✅ البحث في الشقق (فقط الموافق عليها)
+// the user can search about what he want
     public function search(SearchRequest $request)
     {
         Gate::authorize('viewAny', Apartment::class);
-
         $query = Apartment::query()->where('status', 'approved');
-
         if ($request->has('city')) {
             $query->where('city', $request->input('city'));
         }
@@ -148,32 +125,28 @@ class ApartmentController extends Controller
         if ($request->has('space')) {
             $query->where('space', $request->input('space'));
         }
-
         $apartments = $query->with('images')->get();
-
         return response()->json([
             'data' => $apartments,
             'status' => 'success',
             'message' => 'Search completed successfully.',
         ]);
     }
-
-    // ✅ المالك يشوف شققه الخاصة
+    // the owner can show his apartment
     public function myApartments(MyapartmentRequest $request)
     {
         $owner = $request->user();
         $apartments = $owner->apartments()->with('images')->get();
-
         return response()->json([
             'data' => $apartments,
             'status' => 'success',
             'message' => 'Apartments retrieved successfully for this owner.',
         ]);
     }
-    // ✅ الأدمن يشوف كل الشقق المعلقة (pending)
+// the admin show the apartment needing his approved
 public function pendingApartments(Request $request)
 {
-     if (!$request->user()->isAdmin()) {
+    if (!$request->user()->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $apartments = Apartment::where('status', 'pending')->get();
@@ -183,28 +156,22 @@ public function pendingApartments(Request $request)
         'message' => 'Pending apartments retrieved successfully.',
     ]);
 }
-
-    // ✅ الأدمن يوافق على شقة
+// the admin approved to add/update the apartment
     public function approve(Apartment $apartment)
     {
         Gate::authorize('approve', $apartment);
-
         $apartment->update(['status' => 'approved']);
-
         return response()->json([
             'data' => $apartment->load('images'),
             'status' => 'success',
             'message' => 'Apartment approved by admin.',
         ]);
     }
-
-    // ✅ الأدمن يرفض شقة
+// the admin rejected to add/update the apartment
     public function reject(Apartment $apartment)
     {
         Gate::authorize('reject', $apartment);
-
         $apartment->update(['status' => 'rejected']);
-
         return response()->json([
             'data' => $apartment->load('images'),
             'status' => 'success',

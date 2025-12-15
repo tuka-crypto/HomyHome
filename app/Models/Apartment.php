@@ -13,7 +13,7 @@ class Apartment extends Model
         'country',
         'address',
         'price',
-        'discreption',
+        'description',
         'is_available',
         'number_of_room',
         'status',

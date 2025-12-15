@@ -27,18 +27,16 @@ class ApartmentPolicy
     {
         return $user->isOwner();
     }
-     public function viewPending(User $user): bool
+    public function viewPending(User $user): bool
     {
-        return true;
+        return $user->isAdmin();;
     }
-
     public function approve(User $user, Apartment $apartment): bool
-{
-    return $user->isAdmin(); // فقط الأدمن يقدر يوافق
-}
-
-public function reject(User $user, Apartment $apartment): bool
-{
-    return $user->isAdmin(); // فقط الأدمن يقدر يرفض
-}
+    {
+    return $user->isAdmin();
+    }
+    public function reject(User $user, Apartment $apartment): bool
+    {
+    return $user->isAdmin();
+    }
 }

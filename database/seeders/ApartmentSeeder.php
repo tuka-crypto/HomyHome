@@ -19,7 +19,7 @@ class ApartmentSeeder extends Seeder
             'country'=>'syria',
             'address'=>'almalki street',
             'price'=>150.00,
-            'discreption'=>'a nice apartment with a nice decoration',
+            'description'=>'a nice apartment with a nice decoration',
             'is_available'=>true,
             'number_of_room'=>3,
             'space'=>120,

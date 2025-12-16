@@ -5,6 +5,7 @@ use App\Http\Requests\SearchRequest;
 use App\Models\Apartment;
 use App\Http\Requests\StoreApartmentRequest;
 use App\Http\Requests\UpdateApartmentRequest;
+use App\Http\Resources\ApartmentResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -17,11 +18,7 @@ class ApartmentController extends Controller
         $apartments = Apartment::with('images')
             ->where('status', 'approved')
             ->get();
-        return response()->json([
-            'data' => $apartments,
-            'status' => 'success',
-            'message' => 'Apartments indexed successfully.',
-        ]);
+        return ApartmentResource::collection($apartments);
     }
     // add the owner the apartment and waiting approved from admin
     public function store(StoreApartmentRequest $request)
@@ -48,11 +45,7 @@ class ApartmentController extends Controller
             }
         }
         $apartment = Apartment::with('images')->find($apartment->id);
-        return response()->json([
-            'data' => $apartment,
-            'status' => 'success',
-            'message' => 'Apartment request submitted. Waiting for admin approval.',
-        ], 201);
+        return new ApartmentResource($apartment);
     }
     // show the user one apartment and with if statment that the status of apartment is approved
     public function show(Apartment $apartment)
@@ -65,11 +58,7 @@ class ApartmentController extends Controller
             ], 403);
         }
         $apartment->load('images');
-        return response()->json([
-            'data' => $apartment,
-            'status' => 'success',
-            'message' => 'Apartment retrieved successfully.',
-        ]);
+        return new ApartmentResource($apartment);
     }
 //update the owner his apartment and waiting the approved from admin
     public function update(UpdateApartmentRequest $request, Apartment $apartment)
@@ -87,11 +76,7 @@ class ApartmentController extends Controller
     ]);
     $data['status'] = 'pending';
     $apartment->update($data);
-    return response()->json([
-        'data' => $apartment->load('images'),
-        'status' => 'success',
-        'message' => 'Apartment update submitted. Waiting for admin approval.',
-    ]);
+    return new ApartmentResource($apartment->load('images'));
 }
 // the owner delete his apartment
     public function destroy(Apartment $apartment)
@@ -127,22 +112,14 @@ class ApartmentController extends Controller
             $query->where('space', $request->input('space'));
         }
         $apartments = $query->with('images')->get();
-        return response()->json([
-            'data' => $apartments,
-            'status' => 'success',
-            'message' => 'Search completed successfully.',
-        ]);
+        return ApartmentResource::collection($apartments);
     }
     // the owner can show his apartment
     public function myApartments(MyapartmentRequest $request)
     {
         $owner = $request->user();
         $apartments = $owner->apartments()->with('images')->get();
-        return response()->json([
-            'data' => $apartments,
-            'status' => 'success',
-            'message' => 'Apartments retrieved successfully for this owner.',
-        ]);
+        return ApartmentResource::collection($apartments);
     }
 // the admin show the apartment needing his approved
 public function pendingApartments(Request $request)
@@ -151,32 +128,20 @@ public function pendingApartments(Request $request)
             return response()->json(['message' => 'Unauthorized'], 403);
         }
         $apartments = Apartment::where('status', 'pending')->with('images')->get();
-    return response()->json([
-        'data'    => $apartments,
-        'status'  => 'success',
-        'message' => 'Pending apartments retrieved successfully.',
-    ]);
+        return ApartmentResource::collection($apartments);
 }
 // the admin approved to add/update the apartment
     public function approve(Apartment $apartment)
     {
         Gate::authorize('approve', $apartment);
         $apartment->update(['status' => 'approved']);
-        return response()->json([
-            'data' => $apartment->load('images'),
-            'status' => 'success',
-            'message' => 'Apartment approved by admin.',
-        ]);
+        return new ApartmentResource($apartment->load('images'));
     }
 // the admin rejected to add/update the apartment
     public function reject(Apartment $apartment)
     {
         Gate::authorize('reject', $apartment);
         $apartment->update(['status' => 'rejected']);
-        return response()->json([
-            'data' => $apartment->load('images'),
-            'status' => 'success',
-            'message' => 'Apartment rejected by admin.',
-        ]);
+        return new ApartmentResource($apartment->load('images'));
     }
 }

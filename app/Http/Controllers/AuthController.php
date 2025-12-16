@@ -5,6 +5,7 @@ use App\Http\Requests\AdminloginRequest;
 use App\Http\Requests\OtpRequestue;
 use App\Http\Requests\SigninRequest;
 use App\Http\Requests\SignupRequest;
+use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -40,9 +41,9 @@ class AuthController extends Controller
             'id_card_image' => $idCardPath,
         ]);
         return response()->json([
-            'status' => 'success',
-            'message' => 'sign up is successfully, waiting admin approved',
-            'data' => $user
+        'status' => 'success',
+        'message' => 'sign up is successfully, waiting admin approved',
+        'data' => new UserResource($user)
         ], 201);
     } catch (\Exception $e) {
         if (isset($profilePath)) Storage::disk('public')->delete($profilePath);
@@ -138,9 +139,9 @@ public function verifyOtp(OtpRequestue $request)
     $user->tokens()->delete();
     $token = $user->createToken('auth_token')->plainTextToken;
     return response()->json([
-        'token' => $token,
-        'user' => $user,
-    ]);
+    'token' => $token,
+    'user' => new UserResource($user),
+]);
 }
 //user with pending status waiting to approve from admin
     public function pendingUsers(Request $request)
@@ -151,7 +152,7 @@ public function verifyOtp(OtpRequestue $request)
         $users = User::where('is_approved', false)->get();
         return response()->json([
             'status' => 'success',
-            'data'   => $users,
+            'data'   => UserResource::collection($users),
             'message'=> 'Pending users retrieved successfully.'
         ]);
     }
@@ -165,7 +166,7 @@ public function verifyOtp(OtpRequestue $request)
         return response()->json([
             'status'  => 'success',
             'message' => 'User approved successfully.',
-            'data'    => $user
+            'data'    => new UserResource($user)
         ]);
     }
 //admin reject the user
@@ -178,7 +179,7 @@ public function verifyOtp(OtpRequestue $request)
         return response()->json([
             'status'  => 'success',
             'message' => 'User rejected successfully.',
-            'data'    => $user
+            'data'    => new UserResource($user)
         ]);
     }
 //admin delete the user

@@ -49,7 +49,7 @@ class ReviewController extends Controller
         $apartment->average_rating = $apartment->reviews()->avg('rating');
         $apartment->save();
         return response()->json([
-            'message' => 'reviewd successfully',
+            'message' => 'reviewed successfully',
             'review'  => $review->load('apartment')
         ]);
     }

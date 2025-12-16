@@ -1,13 +1,18 @@
 <?php
 namespace App\Http\Controllers;
 use App\Http\Requests\BookingRequest;
+use App\Http\Requests\UpdateBookingRequest;
+use App\Http\Resources\BookingResource;
 use App\Models\Booking;
 use App\Models\Apartment;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+
 class BookingController extends Controller
 {
+// checking that the date of booking is right and donnot overlap with other bookings
     private function checkingDate($apartmentId, $startDate, $endDate, $excludeBookingId = null)
     {
         return Booking::where('apartment_id', $apartmentId)
@@ -25,102 +30,106 @@ class BookingController extends Controller
             })
             ->exists();
     }
+//show the tenant his bookings (previous , canceled, present booking )
     public function myBookings(BookingRequest $request)
     {
         $bookings = Booking::with('apartment')
             ->where('tenant_id', $request->user()->id)
             ->orderBy('start_date', 'desc')
             ->get();
-        return response()->json([
-            'data'   => $bookings,
-            'status' => 'success',
-        ]);
+        return BookingResource::collection($bookings);
     }
+// the tenant can make a booking
     public function store(BookingRequest $request)
     {
         Gate::authorize('create', Booking::class);
-        $validated = $request->validate([
-            'apartment_id' => 'required|exists:apartments,id',
-            'start_date'   => 'required|date|after_or_equal:today',
-            'end_date'     => 'required|date|after:start_date',
-            'guest_count'  => 'required|integer|min:1',
-        ]);
-        $apartment = Apartment::findOrFail($validated['apartment_id']);
+        $apartment = Apartment::findOrFail($request['apartment_id']);
         if ($apartment->status !== 'approved' || !$apartment->is_available) {
-            return response()->json(['status' => 'error'], 403);
+            return response()->json([
+                'status' => 'Error',
+                'message' => 'Apartment not available for booking'
+            ], 403);
         }
-        if ($this->checkingDate($apartment->id, $validated['start_date'], $validated['end_date'])) {
-            return response()->json(['status' => 'error'], 409);
+        if ($this->checkingDate($apartment->id, $request['start_date'], $request['end_date'])) {
+            return response()->json([
+                'status' => 'Error',
+                'message'=>'Booking dates overlap with existing bookings'
+            ], 409);
         }
-        $days = (new \DateTime($validated['end_date']))->diff(new \DateTime($validated['start_date']))->days;
+        $days = (new \DateTime($request['end_date']))->diff(new \DateTime($request['start_date']))->days;
+        if ($days < 1) {
+        return response()->json([
+        'status' => 'Error',
+        'message' => 'Booking must be at least one night'
+        ], 422);
+        }
         $totalPrice = $apartment->price * $days;
         $booking = Booking::create([
             'apartment_id'   => $apartment->id,
             'tenant_id'      => $request->user()->id,
-            'start_date'     => $validated['start_date'],
-            'end_date'       => $validated['end_date'],
-            'guest_count'    => $validated['guest_count'],
+            'start_date'     => $request['start_date'],
+            'end_date'       => $request['end_date'],
+            'guest_count'    => $request['guest_count'],
             'total_price'    => $totalPrice,
             'status'         => 'pending',
             'owner_approved' => false,
             'booking_number' => Str::uuid(),
         ]);
-        return response()->json([
-            'data'   => $booking->load('apartment'),
-            'status' => 'success',
-        ], 201);
+        return new BookingResource($booking->load('apartment'));
     }
-    public function update(BookingRequest $request, Booking $booking)
+//update his booking (start_date,end_date,guest_count)
+    public function update(UpdateBookingRequest $request, Booking $booking)
     {
         Gate::authorize('update', $booking);
-        $validated = $request->validate([
-            'start_date'  => 'sometimes|date|after_or_equal:today',
-            'end_date'    => 'sometimes|date|after:start_date',
-            'guest_count' => 'sometimes|integer|min:1',
-        ]);
-        if (isset($validated['start_date'], $validated['end_date']) &&
-            $this->checkingDate($booking->apartment_id, $validated['start_date'], $validated['end_date'], $booking->id)) {
-            return response()->json(['status' => 'error'], 409);
+        if (isset($request['start_date'], $request['end_date']) &&
+            $this->checkingDate($booking->apartment_id, $request['start_date'], $request['end_date'], $booking->id)) {
+            return response()->json([
+                'status' => 'Error',
+                'message' => 'Booking dates overlap with existing bookings'
+                ], 409);
         }
-        $booking->update(array_merge($validated, [
+        $booking->update(array_merge($request->validated(), [
             'status'         => 'pending',
             'owner_approved' => false,
         ]));
-        return response()->json([
-            'data'   => $booking->load('apartment'),
-            'status' => 'success',
-        ]);
+        return new BookingResource($booking->load('apartment'));
     }
-    public function cancel(BookingRequest $request, Booking $booking)
+// can a tenant cancel his booking if the booking don't start yet
+    public function cancel(Request $request, Booking $booking)
     {
         Gate::authorize('cancel', $booking);
         if ($booking->status === 'confirmed' && Carbon::now()->greaterThanOrEqualTo($booking->start_date)) {
-            return response()->json(['status' => 'error'], 400);
+            return response()->json([
+                'status' => 'Error',
+                'message' => 'Cannot cancel after booking start date'
+            ], 400);
         }
+    if (Carbon::today()->greaterThanOrEqualTo($booking->start_date)) {
+    return response()->json([
+        'status' => 'Error',
+        'message' => 'Cannot cancel after booking start date'
+    ], 400);
+}
         $booking->update([
             'status'         => 'canceled',
             'owner_approved' => false,
         ]);
-        return response()->json([
-            'data'   => $booking->load('apartment'),
-            'status' => 'success',
-        ]);
+        return new BookingResource($booking->load('apartment'));
     }
+// the owner approve of the booking to his apartment
     public function approve(BookingRequest $request, Booking $booking)
     {
         Gate::authorize('approve', $booking);
         if ($this->checkingDate($booking->apartment_id, $booking->start_date, $booking->end_date, $booking->id)) {
-            return response()->json(['status' => 'error'], 409);
+            return response()->json(['status' => 'Error'], 409);
         }
         $booking->update([
             'owner_approved' => true,
             'status'         => 'confirmed',
         ]);
-        return response()->json([
-            'data'   => $booking->load('apartment'),
-            'status' => 'success',
-        ]);
+        return new BookingResource($booking->load('apartment'));
     }
+// the owner reject the booking of his apartment
     public function reject(BookingRequest $request, Booking $booking)
     {
         Gate::authorize('reject', $booking);
@@ -128,11 +137,9 @@ class BookingController extends Controller
             'owner_approved' => false,
             'status'         => 'canceled',
         ]);
-        return response()->json([
-            'data'   => $booking->load('apartment'),
-            'status' => 'success',
-        ]);
+        return new BookingResource($booking->load('apartment'));
     }
+// the owner show the booking of his apartment that are pending his approved
     public function pendingBookingsForOwner(BookingRequest $request)
     {
         $bookings = Booking::with('apartment', 'tenant')
@@ -142,9 +149,6 @@ class BookingController extends Controller
             ->where('status', 'pending')
             ->orderBy('start_date', 'asc')
             ->get();
-        return response()->json([
-            'data'   => $bookings,
-            'status' => 'success',
-        ]);
+        return BookingResource::collection($bookings);
     }
 }

@@ -118,16 +118,16 @@ class ApartmentController extends Controller
         $apartments = $owner->apartments()->with('images')->get();
         return ApartmentResource::collection($apartments);
     }
-//the admin know how the num of user in the app
+//the admin know how the num of pending apartments in the app
 public function ApartmentCount(Request $request)
 {
     if (!$request->user()->isAdmin()) {
         return response()->json(['message' => 'Unauthorized'], 403);
     }
-    $count = Apartment::count();
+    $count = Apartment::where('status', 'pending')->count();
     return response()->json([
         'status'  => 'success',
-        'message' => 'the num of apartment retrieved successfully.',
+        'message' => 'the num of pending apartments retrieved successfully.',
         'count'   => $count
     ]);
 }

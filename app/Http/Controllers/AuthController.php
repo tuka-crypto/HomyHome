@@ -143,16 +143,16 @@ public function verifyOtp(OtpRequestue $request)
     'user' => new UserResource($user),
 ]);
 }
-//the admin know how the num of user in the app
+//the admin know how the num of pending user in the app
 public function usersCount(Request $request)
 {
     if (!$request->user()->isAdmin()) {
         return response()->json(['message' => 'Unauthorized'], 403);
     }
-    $count = User::where('role', '!=', 'admin')->count();
+    $count = User::where('role', '!=', 'admin')->where('is_approved',false)->count();
     return response()->json([
         'status'  => 'success',
-        'message' => 'the num of users retrieved successfully.',
+        'message' => 'the num of pending users retrieved successfully.',
         'count'   => $count
     ]);
 }

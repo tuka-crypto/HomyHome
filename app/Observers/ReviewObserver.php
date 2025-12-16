@@ -10,7 +10,7 @@ class ReviewObserver
         $apartment = $review->apartment;
         $average = $apartment->reviews()->avg('rating');
 
-        $apartment->avarage_rating = $average;
+        $apartment->average_rating = $average;
         $apartment->save();
     }
     public function updated(Review $review)
@@ -18,7 +18,7 @@ class ReviewObserver
         $apartment = $review->apartment;
         $average = $apartment->reviews()->avg('rating');
 
-        $apartment->avarage_rating = $average;
+        $apartment->average_rating = $average;
         $apartment->save();
     }
     public function deleted(Review $review)
@@ -26,7 +26,7 @@ class ReviewObserver
         $apartment = $review->apartment;
         $average = $apartment->reviews()->avg('rating');
 
-        $apartment->avarage_rating = $average;
+        $apartment->average_rating = $average;
         $apartment->save();
     }
 }

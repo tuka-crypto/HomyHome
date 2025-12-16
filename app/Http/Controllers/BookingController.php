@@ -31,7 +31,7 @@ class BookingController extends Controller
             ->exists();
     }
 //show the tenant his bookings (previous , canceled, present booking )
-    public function myBookings(BookingRequest $request)
+    public function myBookings(Request $request)
     {
         $bookings = Booking::with('apartment')
             ->where('tenant_id', $request->user()->id)
@@ -117,7 +117,7 @@ class BookingController extends Controller
         return new BookingResource($booking->load('apartment'));
     }
 // the owner approve of the booking to his apartment
-    public function approve(BookingRequest $request, Booking $booking)
+    public function approve( Booking $booking)
     {
         Gate::authorize('approve', $booking);
         if ($this->checkingDate($booking->apartment_id, $booking->start_date, $booking->end_date, $booking->id)) {

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->decimal('price', 8, 2);
             $table->string('description',500);
             $table->boolean('is_available')->default(true);
-            $table->decimal('avarage_rating', 3, 2)->nullable();
+            $table->decimal('average_rating', 3, 2)->nullable();
             $table->integer('number_of_room');
             $table->integer('space');
             $table->string('status')->default('pending'); // pending, approved, rejected

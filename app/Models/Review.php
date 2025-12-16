@@ -9,6 +9,7 @@ class Review extends Model
     protected $fillable = [
         'apartment_id',
         'tenant_id',
+        "booking_id",
         'rating',
         'comment'
     ];

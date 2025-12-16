@@ -22,9 +22,6 @@ class UpdateApartmentRequest extends FormRequest
     public function rules(): array
     {
     return [
-        'city' => 'nullable|string|max:100',
-        'country' => 'nullable|string|max:100',
-        'address' => 'nullable|string|max:255',
         'price' => 'nullable|numeric',
         'number_of_room' => 'nullable|integer',
         'space' => 'nullable|integer',

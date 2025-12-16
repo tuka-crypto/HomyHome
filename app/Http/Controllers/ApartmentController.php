@@ -65,9 +65,6 @@ class ApartmentController extends Controller
 {
     Gate::authorize('update', $apartment);
     $data = $request->only([
-        'city',
-        'country',
-        'address',
         'price',
         'number_of_room',
         'space',
@@ -121,12 +118,23 @@ class ApartmentController extends Controller
         $apartments = $owner->apartments()->with('images')->get();
         return ApartmentResource::collection($apartments);
     }
+//the admin know how the num of user in the app
+public function ApartmentCount(Request $request)
+{
+    if (!$request->user()->isAdmin()) {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+    $count = Apartment::count();
+    return response()->json([
+        'status'  => 'success',
+        'message' => 'the num of apartment retrieved successfully.',
+        'count'   => $count
+    ]);
+}
 // the admin show the apartment needing his approved
 public function pendingApartments(Request $request)
 {
-    if (!$request->user()->isAdmin()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+        Gate::authorize('viewPending', Apartment::class);
         $apartments = Apartment::where('status', 'pending')->with('images')->get();
         return ApartmentResource::collection($apartments);
 }

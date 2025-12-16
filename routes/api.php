@@ -15,10 +15,12 @@ Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 //approved and reject the admin to auth
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/users/pending', [AuthController::class, 'pendingUsers']);
+    Route::get('/users/count', [AuthController::class, 'usersCount']);
     Route::put('/users/{user}/approve', [AuthController::class, 'approveUser']);
     Route::put('/users/{user}/reject', [AuthController::class, 'rejectUser']);
     Route::delete('/users/{user}', [AuthController::class, 'deleteUser']);
     Route::get('/apartments/pending', [ApartmentController::class, 'pendingApartments']);
+    Route::get('/apartments/count', [ApartmentController::class, 'ApartmentCount']);
 });
 Route::middleware(['auth:sanctum'])->group(function() {
     Route::get('/apartments', [ApartmentController::class, 'index']);

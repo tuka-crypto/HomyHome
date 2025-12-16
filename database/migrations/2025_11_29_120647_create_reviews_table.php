@@ -21,7 +21,6 @@ return new class extends Migration
             $table->text('comment');
             $table->unsignedBigInteger('booking_id');
             $table->foreign('booking_id')->references('id')->on('bookings')->onDelete('cascade');
-
             $table->unique(['booking_id', 'tenant_id']);
             $table->timestamps();
         });

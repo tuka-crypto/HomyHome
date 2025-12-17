@@ -20,7 +20,7 @@ class ApartmentController extends Controller
             ->get();
         return ApartmentResource::collection($apartments);
     }
-    // add the owner the apartment and waiting approved from admin
+// add the owner the apartment and waiting approved from admin
     public function store(StoreApartmentRequest $request)
     {
         Gate::authorize('create', Apartment::class);
@@ -47,7 +47,7 @@ class ApartmentController extends Controller
         $apartment = Apartment::with('images')->find($apartment->id);
         return new ApartmentResource($apartment);
     }
-    // show the user one apartment and with if statment that the status of apartment is approved
+// show the user one apartment and with if statment that the status of apartment is approved
     public function show(Apartment $apartment)
     {
         Gate::authorize('view', $apartment);
@@ -111,7 +111,7 @@ class ApartmentController extends Controller
         $apartments = $query->with('images')->get();
         return ApartmentResource::collection($apartments);
     }
-    // the owner can show his apartment
+// the owner can show his apartment
     public function myApartments(MyapartmentRequest $request)
     {
         $owner = $request->user();

@@ -88,10 +88,14 @@ class BookingController extends Controller
                 'message' => 'Booking dates overlap with existing bookings'
                 ], 409);
         }
-        $booking->update(array_merge($request->validated(), [
-            'status'         => 'pending',
-            'owner_approved' => false,
-        ]));
+        $data = $request->only([
+        'start_date',
+        'end_date',
+        'guest_count'
+    ]);
+    $data['status'] = 'pending';
+    $data['owner_approved'] = false;
+    $booking->update($data);
         return new BookingResource($booking->load('apartment'));
     }
 // can a tenant cancel his booking if the booking don't start yet
@@ -140,7 +144,7 @@ class BookingController extends Controller
         return new BookingResource($booking->load('apartment'));
     }
 // the owner show the booking of his apartment that are pending his approved
-    public function pendingBookingsForOwner(BookingRequest $request)
+    public function pendingBookingsForOwner(Request $request)
     {
         $bookings = Booking::with('apartment', 'tenant')
             ->whereHas('apartment', function ($query) use ($request) {

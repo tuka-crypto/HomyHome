@@ -81,8 +81,12 @@ public function adminLogin(AdminloginRequest $request)
         if (!$user->isAdmin()) {
             return response()->json(['message' => 'Access denied. Admin only.'], 403);
         }
-        $this->sendOTP($user);
-        return response()->json(['message' => 'send the code to whatsapp']);
+        $user->tokens()->delete();
+        $token = $user->createToken('auth_token')->plainTextToken;
+        return response()->json([
+        'token' => $token,
+        'user' => new UserResource($user),
+            ]);
     } catch (\Exception $e) {
         Log::error($e);
         return response()->json(['message' => 'Error in login , try again'], 500);

@@ -42,7 +42,7 @@ class AuthController extends Controller
         ]);
         return response()->json([
         'status' => 'success',
-        'message' => 'sign up is successfully, waiting admin approved',
+        'message' =>__('messages.register_success'),
         'data' => new UserResource($user)
         ], 201);
     } catch (\Exception $e) {
@@ -51,7 +51,7 @@ class AuthController extends Controller
         Log::error($e);
         return response()->json([
             'status' => 'Error',
-            'message' => 'Error in the sign up , try again'
+            'message' =>__('messages.error')
         ], 500);
     }
 }
@@ -76,10 +76,10 @@ public function adminLogin(AdminloginRequest $request)
     try {
         $user = User::where('mobile_phone', $request->mobile_phone)->first();
         if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+            return response()->json(['message' =>__('messages.otp_data')], 401);
         }
         if (!$user->isAdmin()) {
-            return response()->json(['message' => 'Access denied. Admin only.'], 403);
+            return response()->json(['message' =>__('messages.otp_admin')], 403);
         }
         $user->tokens()->delete();
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -89,7 +89,7 @@ public function adminLogin(AdminloginRequest $request)
             ]);
     } catch (\Exception $e) {
         Log::error($e);
-        return response()->json(['message' => 'Error in login , try again'], 500);
+        return response()->json(['message' =>__('messages.error')], 500);
     }
 }
 // sign in after admin approved and send the otp code
@@ -98,16 +98,16 @@ public function signin(SigninRequest $request)
     try {
         $user = User::where('mobile_phone', $request->mobile_phone)->first();
         if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+            return response()->json(['message' => __('messages.otp_data')], 401);
         }
         if (!$user->is_approved) {
-            return response()->json(['message' => 'pending admin approved'], 403);
+            return response()->json(['message' =>__('messages.otp_pending')], 403);
         }
         $this->sendOTP($user);
-        return response()->json(['message' => 'send the code to whatsapp']);
+        return response()->json(['message' => __('messages.otp_send')]);
     } catch (\Exception $e) {
         Log::error($e);
-        return response()->json(['message' => 'Error in sign in , try again'], 500);
+        return response()->json(['message' =>__('messages.error')], 500);
     }
 }
 //logout the user from  the current token
@@ -117,10 +117,10 @@ public function logout(Request $request)
             if ($request->user()->currentAccessToken()) {
                 $request->user()->currentAccessToken()->delete();
             }
-            return response()->json(['message' => 'logout successfully']);
+            return response()->json(['message' =>__('messages.logout_success')]);
         } catch (\Exception $e) {
             Log::error($e);
-            return response()->json(['message' => 'Error in logout, try again'], 500);
+            return response()->json(['message' =>__('messages.error')], 500);
         }
     }
 //verify fron otp that send it to the user in whatsapp
@@ -128,13 +128,13 @@ public function verifyOtp(OtpRequestue $request)
 {
     $user = User::where('mobile_phone', $request->mobile_phone)->first();
     if (!$user) {
-        return response()->json(['message' => 'User not found'], 404);
+        return response()->json(['message' =>__('messages.otp_user')], 404);
     }
     if ((string)$user->otp_code !== (string)$request->otp_code) {
-        return response()->json(['message' => 'Invalid OTP'], 401);
+        return response()->json(['message' =>__('messages.otp')], 401);
     }
     if (Carbon::now()->greaterThan($user->otp_expires_at)) {
-        return response()->json(['message' => 'OTP expired'], 403);
+        return response()->json(['message' =>__('messages.otp_expired')], 403);
     }
     $user->update([
         'otp_code' => null,
@@ -151,12 +151,12 @@ public function verifyOtp(OtpRequestue $request)
 public function usersCount(Request $request)
 {
     if (!$request->user()->isAdmin()) {
-        return response()->json(['message' => 'Unauthorized'], 403);
+        return response()->json(['message' =>__('messages.unauthorize')], 403);
     }
     $count = User::where('role', '!=', 'admin')->where('is_approved',false)->count();
     return response()->json([
         'status'  => 'success',
-        'message' => 'the num of pending users retrieved successfully.',
+        'message' =>__('messages.num_user'),
         'count'   => $count
     ]);
 }
@@ -164,25 +164,25 @@ public function usersCount(Request $request)
     public function pendingUsers(Request $request)
     {
         if (!$request->user()->isAdmin()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' =>__('messages.unauthorize')], 403);
         }
         $users = User::where('is_approved', false)->get();
         return response()->json([
             'status' => 'success',
             'data'   => UserResource::collection($users),
-            'message'=> 'Pending users retrieved successfully.'
+            'message'=>__('messages.pending')
         ]);
     }
 // admin approved to the user
     public function approveUser(Request $request, User $user)
     {
         if (!$request->user()->isAdmin()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' =>__('messages.unauthorize')], 403);
         }
         $user->update(['is_approved' => true]);
         return response()->json([
             'status'  => 'success',
-            'message' => 'User approved successfully.',
+            'message' =>__('messages.approve'),
             'data'    => new UserResource($user)
         ]);
     }
@@ -190,12 +190,12 @@ public function usersCount(Request $request)
     public function rejectUser(Request $request, User $user)
     {
         if (!$request->user()->isAdmin()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' =>__('messages.unauthorize')], 403);
         }
         $user->update(['is_approved' => false]);
         return response()->json([
             'status'  => 'success',
-            'message' => 'User rejected successfully.',
+            'message' =>__('messages.reject'),
             'data'    => new UserResource($user)
         ]);
     }
@@ -203,12 +203,12 @@ public function usersCount(Request $request)
     public function deleteUser(Request $request, User $user)
     {
         if (!$request->user()->isAdmin()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return response()->json(['message' =>__('messages.unauthorize')], 403);
         }
         $user->delete();
         return response()->json([
             'status'  => 'success',
-            'message' => 'User deleted successfully.'
+            'message' =>__('messages.delete')
         ]);
     }
 }

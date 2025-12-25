@@ -15,8 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'owner' => \App\Http\Middleware\OwnerMiddleware::class,
             'tenant' => \App\Http\Middleware\TenantMiddleware::class,
+            'locale' => \App\Http\Middleware\SetUserLocale::class,
         ]);
-
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

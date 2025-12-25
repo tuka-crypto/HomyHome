@@ -54,7 +54,7 @@ class ApartmentController extends Controller
         if ($apartment->status !== 'approved') {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Apartment not approved yet.',
+                'message' =>__('messages.apartment_not_approved'),
             ], 403);
         }
         $apartment->load('images');
@@ -82,7 +82,7 @@ class ApartmentController extends Controller
         $apartment->delete();
         return response()->json([
             'status' => 'success',
-            'message' => 'Apartment deleted successfully.',
+            'message' =>__('messages.apartment_deleted'),
         ]);
     }
 // the user can search about what he want
@@ -122,12 +122,12 @@ class ApartmentController extends Controller
 public function ApartmentCount(Request $request)
 {
     if (!$request->user()->isAdmin()) {
-        return response()->json(['message' => 'Unauthorized'], 403);
+        return response()->json(['message' =>__('messages.unauthorize')], 403);
     }
     $count = Apartment::where('status', 'pending')->count();
     return response()->json([
         'status'  => 'success',
-        'message' => 'the num of pending apartments retrieved successfully.',
+        'message' =>__('messages.num_apartment'),
         'count'   => $count
     ]);
 }

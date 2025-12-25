@@ -20,7 +20,10 @@ class User extends Authenticatable
         'id_card_image',
         'is_approved',
         'otp_code',
-        'otp_expires_at'
+        'otp_expires_at',
+        'fcm_token',
+        'language',
+        'theme'
     ];
     public function isOwner():bool
     {

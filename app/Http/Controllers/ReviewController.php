@@ -21,7 +21,7 @@ class ReviewController extends Controller
         ->first();
     if (!$booking) {
         return response()->json([
-            'message' => 'You cannot review this apartment unless you have a confirmed booking.'
+            'message' =>__('messages.review_not_allowed')
         ], 403);
     }
     $alreadyReviewed = Review::where('booking_id', $booking->id)
@@ -29,7 +29,7 @@ class ReviewController extends Controller
         ->exists();
     if ($alreadyReviewed) {
         return response()->json([
-            'message' => 'You have already reviewed this apartment.'
+            'message' =>__('messages.review_already_done')
         ], 400);
     }
     $review = Review::create([
@@ -43,7 +43,7 @@ class ReviewController extends Controller
     $apartment->average_rating = $apartment->reviews()->avg('rating');
     $apartment->save();
     return response()->json([
-        'message' => 'Reviewed successfully',
+        'message' =>__('messages.review_success'),
         'review'  => $review->load('apartment')
     ]);
 }

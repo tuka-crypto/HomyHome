@@ -24,6 +24,9 @@ return new class extends Migration
             $table->boolean('is_approved')->default(false);
             $table->string('otp_code')->nullable();
             $table->timestamp('otp_expires_at')->nullable();
+            $table->string('fcm_token')->nullable();
+            $table->string('language')->default('en');
+            $table->string('theme')->default('light');
             $table->rememberToken();
             $table->timestamps();
         });

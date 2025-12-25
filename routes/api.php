@@ -3,7 +3,9 @@ use App\Http\Controllers\ApartmentController;
 use App\Http\Controllers\ApartmentImageController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\UserSettingsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 //auth routes
@@ -12,6 +14,18 @@ Route::post('/signin',[AuthController::class,'signin']);
 Route::post('/logout',[AuthController::class,'logout'])->middleware('auth:sanctum');
 Route::post('/admin/login', [AuthController::class, 'adminLogin']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+// language
+Route::middleware(['auth:sanctum', 'locale'])->group(function () {
+//FCM notification
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/user/language', [UserSettingsController::class, 'updateLanguage']);
+    Route::post('/user/theme', [UserSettingsController::class, 'updateTheme']);
+    Route::post('/user/fcm-token', [UserSettingsController::class, 'updateFcmToken']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread', [NotificationController::class, 'unread']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+});
 //approved and reject the admin to auth
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/users/pending', [AuthController::class, 'pendingUsers']);
@@ -68,7 +82,7 @@ Route::middleware(['auth:sanctum', 'owner'])->group(function () {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/reviews', [ReviewController::class, 'store']);
 });
-
+});
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');

@@ -14,7 +14,7 @@ class ApartmentImageController extends Controller
         return response()->json([
             'data' => $apartment->images,
             'status' => 'success',
-            'message' => 'Images retrieved successfully.',
+            'message' =>__('messages.images_retrieved'),
         ]);
     }
     public function store(Request $request, Apartment $apartment)
@@ -29,7 +29,7 @@ class ApartmentImageController extends Controller
         return response()->json([
             'data' => $image,
             'status' => 'success',
-            'message' => 'Image uploaded successfully.',
+            'message' =>__('messages.image_uploaded'),
         ]);
     }
     public function destroy(Apartment $apartment, Apartment_image $image)
@@ -38,7 +38,7 @@ class ApartmentImageController extends Controller
         $image->delete();
         return response()->json([
             'status' => 'success',
-            'message' => 'Image deleted successfully.',
+            'message' =>__('messages.image_deleted'),
         ]);
     }
 }

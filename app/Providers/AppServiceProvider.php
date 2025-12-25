@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\Review;
 use App\Observers\ReviewObserver;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,5 +24,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Review::observe(ReviewObserver::class);
+        if (Auth::check()) {
+            App::setLocale(Auth::user()->language ?? 'ar');
+        }
     }
 }

@@ -4,6 +4,7 @@ return [
     // General
     'success' => 'تمت العملية بنجاح',
     'error' => ' حدث خطأ ما حاول مجددا',
+    'find_apartment'=>'الشقة غير موجودة',
     // User Settings
     'fcm_updated'      => 'تم تحديث رمز الإشعارات بنجاح.',
     'language_updated' => 'تم تحديث اللغة بنجاح.',
@@ -71,4 +72,7 @@ return [
     // User Settings
     'language_updated' => 'تم تحديث اللغة',
     'theme_updated' => 'تم تحديث المظهر',
+    'favorite_added'   => 'تم إضافة الشقة إلى المفضلة.',
+    'favorite_removed' => 'تم إزالة الشقة من المفضلة.',
+    'apartment_not_approved' => 'لا يمكن إضافة شقة غير موافَق عليها إلى المفضلة.',
 ];

@@ -4,6 +4,7 @@ return [
     // General
     'success' => 'Operation completed successfully',
     'error' => 'An error occurred',
+    'find_apartment'=>'the apartment doesnot found',
     // User Settings
     'fcm_updated'      => 'FCM token updated successfully.',
     'language_updated' => 'Language updated successfully.',
@@ -71,4 +72,7 @@ return [
     // User Settings
     'language_updated' => 'Language updated',
     'theme_updated' => 'Theme updated',
+    'favorite_added'   => 'Apartment added to favorites.',
+    'favorite_removed' => 'Apartment removed from favorites.',
+    'apartment_not_approved' => 'You cannot favorite an unapproved apartment.',
 ];

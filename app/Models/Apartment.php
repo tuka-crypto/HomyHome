@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Apartment extends Model
 {
@@ -19,21 +20,36 @@ class Apartment extends Model
         'status',
         'space'
     ];
+    protected $appends = ['is_favorite'];
+
+public function getIsFavoriteAttribute()
+{
+    if (!Auth::check()) return false;
+
+    return Auth::user()
+        ->favorites()
+        ->where('apartment_id', $this->id)
+        ->exists();
+}
     /** @use HasFactory<\Database\Factories\ApartmentFactory> */
     use HasFactory;
     function bookings(){
-        return $this->hasMany(Booking::class,'apartment_id');
+    return $this->hasMany(Booking::class,'apartment_id');
     }
     function reviews(){
-        return $this->hasMany(Review::class,'apartment_id');
+    return $this->hasMany(Review::class,'apartment_id');
     }
     public function images()
-{
+    {
     return $this->hasMany(Apartment_image::class);
-}
-public function owner()
-{
+    }
+    public function owner()
+    {
     return $this->belongsTo(User::class, 'owner_id');
-}
+    }
+    public function favoritedBy()
+    {
+    return $this->belongsToMany(User::class, 'favorites');
+    }
 
 }

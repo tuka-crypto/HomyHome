@@ -13,28 +13,29 @@ class ApartmentResource extends JsonResource
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
-    {
-        return [
-            'id'              => $this->id,
-            'city'            => $this->city,
-            'country'         => $this->country,
-            'address'         => $this->address,
-            'price'           => $this->price,
-            'number_of_room'  => $this->number_of_room,
-            'space'           => $this->space,
-            'description'     => $this->description,
-            'is_available'    => (bool) $this->is_available,
-            'status'          => $this->status,
-            'owner_id'        => $this->owner_id,
+    {return [
+            'id'            => $this->id,
+            'city'          => $this->city,
+            'country'       => $this->country,
+            'address'       => $this->address,
+            'price'         => $this->price,
+            'description'   => $this->description,
+            'is_available'  => $this->is_available,
+            'number_of_room'=> $this->number_of_room,
+            'space'         => $this->space,
+            'status'        => $this->status,
+            'is_favorite'   => $this->is_favorite,
             'images'          => $this->images->map(function ($image) {
                 return [
                     'id'         => $image->id,
                     'image_path' => asset('storage/' . $image->image_path),
-                ];
-            }),
-            'created_at'      => $this->created_at,
-            'updated_at'      => $this->updated_at,
+                ];}),
+            'owner'         => [
+                'id'         => $this->owner->id,
+                'first_name' => $this->owner->first_name,
+                'last_name'  => $this->owner->last_name,
+            ],
+            'created_at'    => $this->created_at->toDateString(),
         ];
-
     }
 }

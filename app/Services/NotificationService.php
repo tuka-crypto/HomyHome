@@ -11,7 +11,7 @@ class NotificationService
     private string $projectId;
     public function __construct()
     {
-        $configPath = storage_path('app/fcm/fcm.json');
+        $configPath =base_path(env('FCM_CREDENTIALS'));
         $jsonKey = json_decode(file_get_contents($configPath), true);
         $this->projectId   = $jsonKey['project_id'];
         $this->accessToken = $this->getAccessToken($jsonKey);

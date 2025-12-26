@@ -41,7 +41,6 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
-
     protected function casts(): array
     {
         return [
@@ -60,5 +59,8 @@ class User extends Authenticatable
     {
     return $this->hasMany(Apartment::class, 'owner_id');
     }
-
+    public function favorites()
+    {
+    return $this->belongsToMany(Apartment::class, 'favorites');
+    }
 }

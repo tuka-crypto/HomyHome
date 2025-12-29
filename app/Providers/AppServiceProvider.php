@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Review::observe(ReviewObserver::class);
         if (Auth::check()) {
-            App::setLocale(Auth::user()->language ?? 'ar');
+            App::setLocale(Auth::user()->language ?? 'en');
         }
     }
 }
